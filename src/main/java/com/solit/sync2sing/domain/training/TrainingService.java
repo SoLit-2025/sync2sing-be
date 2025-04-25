@@ -40,11 +40,11 @@ public abstract class TrainingService {
 //
 //    }
 //
-//    TrainingDTO setTrainingProgress(UserDetails userDetails) {
+//    TrainingDTO setTrainingProgress(UserDetails userDetails, Long trainingId, Integer progress) {
 //
 //    }
 //
-//    VocalAnalysisReportDTO generateVocalAnalysisReport(GenerateVocalAnalysisReportRequest generateVocalAnalysisReportRequest) {
+//    VocalAnalysisReportDTO generateVocalAnalysisReport(String recordingFileUrl, GenerateVocalAnalysisReportRequest generateVocalAnalysisReportRequest) {
 //
 //    }
 }
