@@ -18,6 +18,10 @@ import org.springframework.http.HttpStatus;
 public enum ResponseCode {
 
     // 응답 코드 정의
+    SIGNUP_SUCCESS(HttpStatus.CREATED, "회원가입에 성공했습니다."),
+    DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST, "이미 사용 중인 이메일입니다."),
+    SIGNUP_REQUIRED_FIELDS(HttpStatus.BAD_REQUEST, "이메일, 비밀번호, 닉네임은 필수 항목입니다."),
+
     ;
 
     private final HttpStatus status;
