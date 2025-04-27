@@ -7,5 +7,4 @@ import com.solit.sync2sing.domain.user.dto.response.SignupResponseDTO;
 public interface UserSignupService {
     SignupResponseDTO signUp(SignupRequestDTO requestDTO);
 
-
 }

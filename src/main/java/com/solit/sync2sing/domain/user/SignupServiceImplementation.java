@@ -2,18 +2,24 @@ package com.solit.sync2sing.domain.user;
 
 import com.solit.sync2sing.domain.user.dto.request.SignupRequestDTO;
 import com.solit.sync2sing.domain.user.dto.response.SignupResponseDTO;
+import com.solit.sync2sing.domain.user.entity.UserEntity;
 import com.solit.sync2sing.domain.user.repository.UserRepository;
 import com.solit.sync2sing.domain.user.service.SignupService;
 import com.solit.sync2sing.domain.user.service.UserSignupService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SignupServiceImplementation extends SignupService implements UserSignupService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public SignupServiceImplementation(UserRepository userRepository) {
+    @Autowired
+    public SignupServiceImplementation(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -21,16 +27,29 @@ public class SignupServiceImplementation extends SignupService implements UserSi
 
         validateRequest(requestDTO);
 
-        return SignupResponseDTO.builder()
+        String encodedPassword = passwordEncoder.encode(requestDTO.getPassword());
+
+        UserEntity userEntity = UserEntity.builder()
                 .username(requestDTO.getUsername())
+                .password(encodedPassword)
                 .nickname(requestDTO.getNickname())
                 .gender(requestDTO.getGender())
                 .age(requestDTO.getAge())
                 .voiceRange(requestDTO.getVoiceRange())
                 .voiceType(requestDTO.getVoiceType())
+                .build();
+
+        userRepository.save(userEntity);
+
+        return SignupResponseDTO.builder()
+                .username(userEntity.getUsername())
+                .nickname(userEntity.getNickname())
+                .gender(userEntity.getGender())
+                .age(userEntity.getAge())
+                .voiceRange(userEntity.getVoiceRange())
+                .voiceType(userEntity.getVoiceType())
                 .duetPenaltyCount(0)
                 .duetPenaltyUntil(null)
                 .build();
     }
-
 }

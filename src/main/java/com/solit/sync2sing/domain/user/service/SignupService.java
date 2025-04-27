@@ -4,6 +4,8 @@ import com.solit.sync2sing.domain.user.dto.request.SignupRequestDTO;
 import com.solit.sync2sing.domain.user.dto.response.SignupResponseDTO;
 import com.solit.sync2sing.domain.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import static com.solit.sync2sing.global.response.ResponseCode.*;
 
 public abstract class SignupService {
