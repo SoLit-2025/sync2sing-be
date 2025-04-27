@@ -34,6 +34,10 @@ public class LoginServiceImplementation implements UserLoginService {
         String accessToken = tokenProvider.createAccessToken(username);
         String refreshToken = tokenProvider.createRefreshToken(username);
 
+        user.setRefreshToken(refreshToken);
+        userRepository.save(user);
+
+
         return new LoginResponseDTO(accessToken, refreshToken);
     }
 }
