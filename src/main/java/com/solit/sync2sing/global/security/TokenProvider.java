@@ -10,13 +10,13 @@ import java.util.Date;
 @Component
 public class TokenProvider {
 
-    @Value("${jwt.secret}")
+    @Value("${JWT_SECRET}")
     private String secretKey;
 
-    @Value("${jwt.access-token-expiration}")
+    @Value("${JWT_ACCESS_EXPIRATION}")
     private long accessTokenExpiration;
 
-    @Value("${jwt.refresh-token-expiration}")
+    @Value("${JWT_REFRESH_EXPIRATION}")
     private long refreshTokenExpiration;
 
     public String createAccessToken(String username) {
