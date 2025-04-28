@@ -3,11 +3,9 @@ package com.solit.sync2sing.domain.training.duet.service;
 import com.solit.sync2sing.domain.training.dto.*;
 import com.solit.sync2sing.domain.training.duet.dto.*;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Service
 public interface DuetTrainingService {
 
     AudioMergeResponseDTO mergeAudios(Long roomId);
