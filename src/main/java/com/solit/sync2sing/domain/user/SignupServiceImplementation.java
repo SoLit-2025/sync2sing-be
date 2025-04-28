@@ -33,10 +33,12 @@ public class SignupServiceImplementation extends SignupService implements UserSi
                 .username(requestDTO.getUsername())
                 .password(encodedPassword)
                 .nickname(requestDTO.getNickname())
-                .gender(requestDTO.getGender())
-                .age(requestDTO.getAge())
-                .voiceRange(requestDTO.getVoiceRange())
-                .voiceType(requestDTO.getVoiceType())
+                .gender("FEMALE")
+                .age(26)
+                .voiceRange("C3~G5")
+                .voiceType("SOPRANO")
+                .duetPenaltyCount(0)
+                .duetPenaltyUntil(null)
                 .build();
 
         userRepository.save(userEntity);
@@ -48,7 +50,6 @@ public class SignupServiceImplementation extends SignupService implements UserSi
                 .age(userEntity.getAge())
                 .voiceRange(userEntity.getVoiceRange())
                 .voiceType(userEntity.getVoiceType())
-                .duetPenaltyCount(0)
                 .duetPenaltyUntil(null)
                 .build();
     }
