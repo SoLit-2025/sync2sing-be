@@ -29,4 +29,6 @@ public class UserEntity {
     private int duetPenaltyCount;
     private LocalDateTime duetPenaltyUntil;
 
+    private String refreshToken;
+
 }
