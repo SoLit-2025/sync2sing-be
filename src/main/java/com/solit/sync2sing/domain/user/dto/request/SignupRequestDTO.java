@@ -11,9 +11,5 @@ public class SignupRequestDTO {
     private String username;
     private String password;
     private String nickname;
-    private String gender;
-    private int age;
-    private String voiceRange;
-    private String voiceType;
 
 }
