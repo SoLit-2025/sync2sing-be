@@ -15,8 +15,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/api/user")
 public class UserController {
 
     private final UserSignupService userSignupService;
@@ -84,7 +86,7 @@ public class UserController {
                     .status(HttpStatus.OK)
                     .body(new ResponseDTO(
                             ResponseCode.LOGOUT_SUCCESS,
-                            logoutResponse
+                            null
                     ));
         } catch (Exception e) {
             return ResponseEntity
