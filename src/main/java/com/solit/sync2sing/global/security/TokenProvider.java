@@ -2,14 +2,17 @@ package com.solit.sync2sing.global.security;
 
 import com.solit.sync2sing.global.response.ResponseCode;
 import io.jsonwebtoken.*;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
+import java.util.List;
 
 @Component
 public class TokenProvider {
 
+    @Getter
     @Value("${JWT_SECRET}")
     private String secretKey;
 
@@ -19,12 +22,13 @@ public class TokenProvider {
     @Value("${JWT_REFRESH_EXPIRATION}")
     private long refreshTokenExpiration;
 
-    public String createAccessToken(String username) {
+    public String createAccessToken(String username, List<String> roles) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessTokenExpiration);
 
         return Jwts.builder()
                 .setSubject(username)
+                .claim("roles", roles)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(SignatureAlgorithm.HS256, secretKey)
@@ -72,4 +76,20 @@ public class TokenProvider {
                 .getBody();
         return claims.getSubject();
     }
+
+    public Long getExpirationFromToken(String token) {
+        Claims claims = Jwts.parser()
+                .setSigningKey(secretKey)
+                .parseClaimsJws(token)
+                .getBody();
+        return claims.getExpiration().getTime() - System.currentTimeMillis();
+    }
+    public boolean isTokenExpired(String token) {
+        Claims claims = Jwts.parser()
+                .setSigningKey(secretKey)
+                .parseClaimsJws(token)
+                .getBody();
+        return claims.getExpiration().before(new Date());
+    }
+
 }
