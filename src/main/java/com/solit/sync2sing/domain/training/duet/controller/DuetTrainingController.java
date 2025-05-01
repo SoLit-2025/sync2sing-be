@@ -209,8 +209,7 @@ public class DuetTrainingController {
             return ResponseEntity
                     .status(204)
                     .body(new ResponseDTO(
-                            ResponseCode.DUET_CURRENT_TRAINING_EMPTY,
-                            new Object()
+                            ResponseCode.DUET_CURRENT_TRAINING_EMPTY
                     ));
         }
 
