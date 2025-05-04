@@ -4,7 +4,6 @@ import com.solit.sync2sing.domain.user.dto.request.SignupRequestDTO;
 import com.solit.sync2sing.domain.user.dto.response.SignupResponseDTO;
 import com.solit.sync2sing.domain.user.entity.UserEntity;
 import com.solit.sync2sing.domain.user.repository.UserRepository;
-import com.solit.sync2sing.domain.user.service.SignupService;
 import com.solit.sync2sing.domain.user.service.UserSignupService;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.type.Gender;
@@ -18,7 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @Service
-public class SignupServiceImplementation extends SignupService implements UserSignupService {
+public class SignupServiceImplementation implements UserSignupService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -31,14 +30,6 @@ public class SignupServiceImplementation extends SignupService implements UserSi
 
     @Override
     public SignupResponseDTO signUp(SignupRequestDTO requestDTO) {
-        // 중복 이메일 체크
-        if (userRepository.existsByUsername(requestDTO.getUsername())) {
-            throw new ResponseStatusException(
-                    ResponseCode.DUPLICATE_EMAIL.getStatus(),
-                    ResponseCode.DUPLICATE_EMAIL.getMessage()
-            );
-        }
-
         validateRequest(requestDTO);
 
         String encodedPassword = passwordEncoder.encode(requestDTO.getPassword());
@@ -75,13 +66,20 @@ public class SignupServiceImplementation extends SignupService implements UserSi
                 .duetPenaltyUntil(null)
                 .build();
     }
-    protected void validateRequest(SignupRequestDTO requestDTO) {
+
+    // 공통 검증 로직을 구현체 내부로 이동
+    private void validateRequest(SignupRequestDTO requestDTO) {
         if (requestDTO.getUsername() == null || requestDTO.getPassword() == null || requestDTO.getNickname() == null) {
             throw new ResponseStatusException(
                     ResponseCode.SIGNUP_REQUIRED_FIELDS.getStatus(),
                     ResponseCode.SIGNUP_REQUIRED_FIELDS.getMessage()
             );
         }
+        if (userRepository.existsByUsername(requestDTO.getUsername())) {
+            throw new ResponseStatusException(
+                    ResponseCode.DUPLICATE_EMAIL.getStatus(),
+                    ResponseCode.DUPLICATE_EMAIL.getMessage()
+            );
+        }
     }
-
 }
