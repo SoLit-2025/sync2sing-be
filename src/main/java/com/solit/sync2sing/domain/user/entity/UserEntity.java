@@ -1,11 +1,10 @@
 package com.solit.sync2sing.domain.user.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import com.solit.sync2sing.global.type.Gender;
+import com.solit.sync2sing.global.type.VoiceType;
 
 @Getter
 @Builder
@@ -19,10 +18,16 @@ public class UserEntity {
     private String username;
     private String password;
     private String nickname;
-    private String gender;
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
     private int age;
     private String voiceRange;
-    private String voiceType;
+
+    @Enumerated(EnumType.STRING)
+    private VoiceType voiceType;
+
     private int duetPenaltyCount;
     private LocalDateTime duetPenaltyUntil;
 }
