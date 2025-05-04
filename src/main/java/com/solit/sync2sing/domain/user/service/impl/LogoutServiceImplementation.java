@@ -10,6 +10,7 @@ import com.solit.sync2sing.global.security.TokenProvider;
 import org.springframework.data.redis.core.RedisTemplate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.concurrent.TimeUnit;
 
@@ -27,24 +28,36 @@ public class LogoutServiceImplementation implements UserLogoutService {
 
         // accessToken 만료 검증
         if (tokenProvider.isTokenExpired(accessToken)) {
-            throw new RuntimeException(ResponseCode.EXPIRED_JWT_TOKEN.getMessage());
+            throw new ResponseStatusException(
+                    ResponseCode.EXPIRED_JWT_TOKEN.getStatus(),
+                    ResponseCode.EXPIRED_JWT_TOKEN.getMessage()
+            );
         }
 
         String userEmail = tokenProvider.getUsernameFromToken(accessToken);
 
         UserEntity user = userRepository.findByUsername(userEmail)
-                .orElseThrow(() -> new RuntimeException(ResponseCode.USER_NOT_FOUND.getMessage()));
+                .orElseThrow(() -> new ResponseStatusException(
+                        ResponseCode.USER_NOT_FOUND.getStatus(),
+                        ResponseCode.USER_NOT_FOUND.getMessage()
+                ));
 
         // refreshToken 유효성 검사
         String refreshToken = logoutRequestDTO.getRefreshToken();
         if (user.getRefreshToken() == null || !user.getRefreshToken().equals(logoutRequestDTO.getRefreshToken())) {
-            throw new RuntimeException(ResponseCode.INVALID_JWT_TOKEN.getMessage());
+            throw new ResponseStatusException(
+                    ResponseCode.INVALID_REFRESH_TOKEN.getStatus(),
+                    ResponseCode.INVALID_REFRESH_TOKEN.getMessage()
+            );
         }
 
         // 4. AccessToken 블랙리스트 등록
         Long expiration = tokenProvider.getExpirationFromToken(accessToken);
         if (expiration <= 0) {
-            throw new RuntimeException(ResponseCode.EXPIRED_JWT_TOKEN.getMessage());
+            throw new ResponseStatusException(
+                    ResponseCode.EXPIRED_JWT_TOKEN.getStatus(),
+                    ResponseCode.EXPIRED_JWT_TOKEN.getMessage()
+            );
         }
         redisTemplate.opsForValue().set(
                 accessToken,

@@ -6,11 +6,14 @@ import com.solit.sync2sing.domain.user.entity.UserEntity;
 import com.solit.sync2sing.domain.user.repository.UserRepository;
 import com.solit.sync2sing.domain.user.service.SignupService;
 import com.solit.sync2sing.domain.user.service.UserSignupService;
+import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.type.Gender;
 import com.solit.sync2sing.global.type.VoiceType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -28,6 +31,13 @@ public class SignupServiceImplementation extends SignupService implements UserSi
 
     @Override
     public SignupResponseDTO signUp(SignupRequestDTO requestDTO) {
+        // 중복 이메일 체크
+        if (userRepository.existsByUsername(requestDTO.getUsername())) {
+            throw new ResponseStatusException(
+                    ResponseCode.DUPLICATE_EMAIL.getStatus(),
+                    ResponseCode.DUPLICATE_EMAIL.getMessage()
+            );
+        }
 
         validateRequest(requestDTO);
 
@@ -46,7 +56,14 @@ public class SignupServiceImplementation extends SignupService implements UserSi
                 .roles(List.of("USER"))
                 .build();
 
-        userRepository.save(userEntity);
+        try {
+            userRepository.save(userEntity);
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                    ResponseCode.DUPLICATE_EMAIL.getStatus(),
+                    ResponseCode.DUPLICATE_EMAIL.getMessage()
+            );
+        }
 
         return SignupResponseDTO.builder()
                 .username(userEntity.getUsername())
@@ -58,4 +75,13 @@ public class SignupServiceImplementation extends SignupService implements UserSi
                 .duetPenaltyUntil(null)
                 .build();
     }
+    protected void validateRequest(SignupRequestDTO requestDTO) {
+        if (requestDTO.getUsername() == null || requestDTO.getPassword() == null || requestDTO.getNickname() == null) {
+            throw new ResponseStatusException(
+                    ResponseCode.SIGNUP_REQUIRED_FIELDS.getStatus(),
+                    ResponseCode.SIGNUP_REQUIRED_FIELDS.getMessage()
+            );
+        }
+    }
+
 }
