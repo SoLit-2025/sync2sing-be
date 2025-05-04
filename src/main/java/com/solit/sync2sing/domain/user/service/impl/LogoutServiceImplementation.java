@@ -1,4 +1,4 @@
-package com.solit.sync2sing.domain.user;
+package com.solit.sync2sing.domain.user.service.impl;
 
 import com.solit.sync2sing.domain.user.dto.request.LogoutRequestDTO;
 import com.solit.sync2sing.domain.user.dto.response.LogoutResponseDTO;
