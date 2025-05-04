@@ -4,16 +4,20 @@ import com.solit.sync2sing.domain.user.dto.request.SignupRequestDTO;
 import com.solit.sync2sing.domain.user.dto.response.SignupResponseDTO;
 import com.solit.sync2sing.domain.user.entity.UserEntity;
 import com.solit.sync2sing.domain.user.repository.UserRepository;
-import com.solit.sync2sing.domain.user.service.SignupService;
 import com.solit.sync2sing.domain.user.service.UserSignupService;
+import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.type.Gender;
 import com.solit.sync2sing.global.type.VoiceType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 
 @Service
-public class SignupServiceImplementation extends SignupService implements UserSignupService {
+public class SignupServiceImplementation implements UserSignupService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -26,7 +30,6 @@ public class SignupServiceImplementation extends SignupService implements UserSi
 
     @Override
     public SignupResponseDTO signUp(SignupRequestDTO requestDTO) {
-
         validateRequest(requestDTO);
 
         String encodedPassword = passwordEncoder.encode(requestDTO.getPassword());
@@ -41,9 +44,17 @@ public class SignupServiceImplementation extends SignupService implements UserSi
                 .voiceType(VoiceType.SOPRANO)
                 .duetPenaltyCount(0)
                 .duetPenaltyUntil(null)
+                .roles(List.of("USER"))
                 .build();
 
-        userRepository.save(userEntity);
+        try {
+            userRepository.save(userEntity);
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                    ResponseCode.DUPLICATE_EMAIL.getStatus(),
+                    ResponseCode.DUPLICATE_EMAIL.getMessage()
+            );
+        }
 
         return SignupResponseDTO.builder()
                 .username(userEntity.getUsername())
@@ -54,5 +65,21 @@ public class SignupServiceImplementation extends SignupService implements UserSi
                 .voiceType(userEntity.getVoiceType())
                 .duetPenaltyUntil(null)
                 .build();
+    }
+
+    // 공통 검증 로직을 구현체 내부로 이동
+    private void validateRequest(SignupRequestDTO requestDTO) {
+        if (requestDTO.getUsername() == null || requestDTO.getPassword() == null || requestDTO.getNickname() == null) {
+            throw new ResponseStatusException(
+                    ResponseCode.SIGNUP_REQUIRED_FIELDS.getStatus(),
+                    ResponseCode.SIGNUP_REQUIRED_FIELDS.getMessage()
+            );
+        }
+        if (userRepository.existsByUsername(requestDTO.getUsername())) {
+            throw new ResponseStatusException(
+                    ResponseCode.DUPLICATE_EMAIL.getStatus(),
+                    ResponseCode.DUPLICATE_EMAIL.getMessage()
+            );
+        }
     }
 }
