@@ -6,6 +6,8 @@ import com.solit.sync2sing.domain.user.entity.UserEntity;
 import com.solit.sync2sing.domain.user.repository.UserRepository;
 import com.solit.sync2sing.domain.user.service.SignupService;
 import com.solit.sync2sing.domain.user.service.UserSignupService;
+import com.solit.sync2sing.global.type.Gender;
+import com.solit.sync2sing.global.type.VoiceType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,10 +37,10 @@ public class SignupServiceImplementation extends SignupService implements UserSi
                 .username(requestDTO.getUsername())
                 .password(encodedPassword)
                 .nickname(requestDTO.getNickname())
-                .gender("FEMALE")
+                .gender(Gender.FEMALE)
                 .age(26)
                 .voiceRange("C3~G5")
-                .voiceType("SOPRANO")
+                .voiceType(VoiceType.SOPRANO)
                 .duetPenaltyCount(0)
                 .duetPenaltyUntil(null)
                 .roles(List.of("USER"))

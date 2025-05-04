@@ -1,5 +1,7 @@
 package com.solit.sync2sing.domain.user.dto.response;
 
+import com.solit.sync2sing.global.type.Gender;
+import com.solit.sync2sing.global.type.VoiceType;
 import lombok.Builder;
 import lombok.Getter;
 import java.time.LocalDateTime;
@@ -9,10 +11,10 @@ import java.time.LocalDateTime;
 public class SignupResponseDTO {
     private String username; // 사용자의 이메일
     private String nickname;
-    private String gender;
+    private Gender gender;
     private int age;
     private String voiceRange;
-    private String voiceType;
+    private VoiceType voiceType;
     private int duetPenaltyCount;
     private LocalDateTime duetPenaltyUntil;
 }

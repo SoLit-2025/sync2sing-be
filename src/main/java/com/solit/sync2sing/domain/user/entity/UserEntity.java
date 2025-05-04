@@ -5,6 +5,8 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import com.solit.sync2sing.global.type.Gender;
+import com.solit.sync2sing.global.type.VoiceType;
 
 @Getter
 @Builder
@@ -22,10 +24,16 @@ public class UserEntity {
     private String username;
     private String password;
     private String nickname;
-    private String gender;
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
     private int age;
     private String voiceRange;
-    private String voiceType;
+
+    @Enumerated(EnumType.STRING)
+    private VoiceType voiceType;
+
     private int duetPenaltyCount;
     private LocalDateTime duetPenaltyUntil;
 
