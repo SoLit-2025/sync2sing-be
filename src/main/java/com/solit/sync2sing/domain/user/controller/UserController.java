@@ -40,15 +40,13 @@ public class UserController {
             return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .body(new ResponseDTO(
-                            ResponseCode.SIGNUP_SUCCESS,
-                            null
+                            ResponseCode.SIGNUP_SUCCESS
                     ));
         } catch (Exception e) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
                     .body(new ResponseDTO(
-                            ResponseCode.DUPLICATE_EMAIL,
-                            null
+                            ResponseCode.DUPLICATE_EMAIL
                     ));
         }
     }
@@ -66,8 +64,7 @@ public class UserController {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body(new ResponseDTO(
-                            ResponseCode.INVALID_PASSWORD,
-                            null
+                            ResponseCode.INVALID_PASSWORD
                     ));
         }
     }
@@ -85,15 +82,13 @@ public class UserController {
             return ResponseEntity
                     .status(HttpStatus.OK)
                     .body(new ResponseDTO(
-                            ResponseCode.LOGOUT_SUCCESS,
-                            null
+                            ResponseCode.LOGOUT_SUCCESS
                     ));
         } catch (Exception e) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
                     .body(new ResponseDTO(
-                            ResponseCode.INVALID_REFRESH_TOKEN,
-                            null
+                            ResponseCode.INVALID_REFRESH_TOKEN
                     ));
         }
     }
