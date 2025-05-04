@@ -10,6 +10,10 @@ import com.solit.sync2sing.global.security.TokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+
 
 @Service
 @RequiredArgsConstructor
@@ -25,18 +29,24 @@ public class LoginServiceImplementation implements UserLoginService {
         String password = requestDTO.getPassword();
 
         UserEntity user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException(ResponseCode.USER_NOT_FOUND.getMessage()));
+                .orElseThrow(() -> new ResponseStatusException(
+                        ResponseCode.USER_NOT_FOUND.getStatus(),
+                        ResponseCode.USER_NOT_FOUND.getMessage()
+                ));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new RuntimeException(ResponseCode.INVALID_PASSWORD.getMessage());
+            throw new ResponseStatusException(
+                    ResponseCode.INVALID_PASSWORD.getStatus(),
+                    ResponseCode.INVALID_PASSWORD.getMessage()
+            );
         }
+        List<String> roles = user.getRoles();
 
-        String accessToken = tokenProvider.createAccessToken(username);
+        String accessToken = tokenProvider.createAccessToken(username,roles);
         String refreshToken = tokenProvider.createRefreshToken(username);
 
         user.setRefreshToken(refreshToken);
         userRepository.save(user);
-
 
         return new LoginResponseDTO(accessToken, refreshToken);
     }
