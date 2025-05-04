@@ -2,7 +2,6 @@ package com.solit.sync2sing.domain.user.controller;
 
 import com.solit.sync2sing.domain.user.dto.request.LoginRequestDTO;
 import com.solit.sync2sing.domain.user.dto.request.SignupRequestDTO;
-import com.solit.sync2sing.domain.user.dto.response.SignupResponseDTO;
 import com.solit.sync2sing.domain.user.dto.response.LoginResponseDTO;
 import com.solit.sync2sing.domain.user.service.UserLoginService;
 import com.solit.sync2sing.domain.user.service.UserSignupService;
@@ -19,8 +18,8 @@ public class UserController {
     private final UserSignupService userSignupService;
     private final UserLoginService userLoginService;
 
-
-    public UserController(UserSignupService userSignupService, UserLoginService userLoginService) {
+    public UserController(UserSignupService userSignupService,
+                          UserLoginService userLoginService) {
         this.userSignupService = userSignupService;
         this.userLoginService = userLoginService;
     }
@@ -28,19 +27,17 @@ public class UserController {
     @PostMapping("/signup")
     public ResponseEntity<ResponseDTO> signup(@RequestBody SignupRequestDTO signupRequest) {
         try {
-            SignupResponseDTO responseDTO = userSignupService.signUp(signupRequest);
+            userSignupService.signUp(signupRequest);
             return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .body(new ResponseDTO(
-                            ResponseCode.SIGNUP_SUCCESS,
-                            responseDTO
+                            ResponseCode.SIGNUP_SUCCESS
                     ));
         } catch (Exception e) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
                     .body(new ResponseDTO(
-                            ResponseCode.DUPLICATE_EMAIL,
-                            null
+                            ResponseCode.DUPLICATE_EMAIL
                     ));
         }
     }
@@ -58,8 +55,7 @@ public class UserController {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body(new ResponseDTO(
-                            ResponseCode.INVALID_PASSWORD,
-                            null
+                            ResponseCode.INVALID_PASSWORD
                     ));
         }
     }
