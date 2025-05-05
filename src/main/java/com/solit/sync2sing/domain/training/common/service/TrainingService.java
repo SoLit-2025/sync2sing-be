@@ -1,4 +1,4 @@
-﻿package com.solit.sync2sing.domain.training.common.service;
+package com.solit.sync2sing.domain.training.common.service;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import com.solit.sync2sing.domain.training.base.dto.*;

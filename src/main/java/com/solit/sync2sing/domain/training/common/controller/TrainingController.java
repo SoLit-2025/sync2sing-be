@@ -1,4 +1,4 @@
-﻿package com.solit.sync2sing.domain.training.common.controller;
+package com.solit.sync2sing.domain.training.common.controller;
 
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
