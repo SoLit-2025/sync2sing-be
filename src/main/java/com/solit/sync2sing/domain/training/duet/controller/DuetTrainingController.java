@@ -1,10 +1,10 @@
 package com.solit.sync2sing.domain.training.duet.controller;
 
-import com.solit.sync2sing.domain.training.dto.GenerateVocalAnalysisReportRequest;
-import com.solit.sync2sing.domain.training.dto.SongListDTO;
+import com.solit.sync2sing.domain.training.base.dto.SongListDTO;
+import com.solit.sync2sing.domain.training.common.dto.GenerateVocalAnalysisReportRequest;
+import com.solit.sync2sing.domain.training.common.dto.SetTrainingProgressRequest;
 import com.solit.sync2sing.domain.training.duet.dto.*;
 import com.solit.sync2sing.domain.training.duet.service.DuetTrainingService;
-import com.solit.sync2sing.domain.training.solo.dto.SetTrainingProgressRequest;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.response.ResponseDTO;
 import org.springframework.http.HttpStatus;

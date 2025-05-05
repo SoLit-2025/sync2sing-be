@@ -1,4 +1,4 @@
-package com.solit.sync2sing.domain.training.solo.dto;
+package com.solit.sync2sing.domain.training.common.dto;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
