@@ -1,6 +1,8 @@
 package com.solit.sync2sing.domain.training.duet.service;
 
-import com.solit.sync2sing.domain.training.dto.*;
+import com.solit.sync2sing.domain.training.base.dto.*;
+import com.solit.sync2sing.domain.training.common.dto.GenerateVocalAnalysisReportRequest;
+import com.solit.sync2sing.domain.training.common.dto.VocalAnalysisReportDTO;
 import com.solit.sync2sing.domain.training.duet.dto.*;
 import org.springframework.security.core.userdetails.UserDetails;
 
