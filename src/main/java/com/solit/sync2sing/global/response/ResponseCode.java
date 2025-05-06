@@ -49,6 +49,24 @@ public enum ResponseCode {
     DUET_CURRENT_TRAINING_EMPTY(HttpStatus.NO_CONTENT, "진행 중인 트레이닝이 없습니다."),
     DUET_TRAINING_PROGRESS_UPDATED(HttpStatus.OK, "듀엣 트레이닝 진행 상황 업데이트에 성공했습니다."),
 
+    SIGNUP_SUCCESS(HttpStatus.CREATED, "회원가입에 성공했습니다."),
+    DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST, "이미 사용 중인 이메일입니다."),
+    SIGNUP_REQUIRED_FIELDS(HttpStatus.BAD_REQUEST, "이메일, 비밀번호, 닉네임은 필수 항목입니다."),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
+    INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "잘못된 비밀번호입니다."),
+    LOGIN_SUCCESS(HttpStatus.OK, "로그인에 성공했습니다."),
+    BAD_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청입니다."),
+    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다."),
+    INVALID_USER_INPUT(HttpStatus.BAD_REQUEST, "요청한 값이 유효하지 않습니다."),
+    INVALID_JWT_SIGNATURE(HttpStatus.UNAUTHORIZED, "유효하지 않은 JWT 서명입니다."),
+    INVALID_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 JWT 토큰입니다."),
+    EXPIRED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "만료된 JWT 토큰입니다."),
+    UNSUPPORTED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "지원되지 않는 JWT 토큰입니다."),
+    EMPTY_JWT_CLAIMS(HttpStatus.BAD_REQUEST, "JWT 클레임 문자열이 비어 있습니다."),
+    BLACKLISTED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "블랙리스트에 등록된 JWT 토큰입니다."),
+    LOGOUT_SUCCESS(HttpStatus.OK, "로그아웃에 성공했습니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "유효하지 않은 Refresh Token입니다."),
+
     ;
 
     private final HttpStatus status;
