@@ -1,11 +1,9 @@
 package com.solit.sync2sing.domain.training.solo.service;
 
-import com.solit.sync2sing.domain.training.dto.*;
+import com.solit.sync2sing.domain.training.base.dto.*;
 import org.springframework.security.core.userdetails.UserDetails;
 
 public interface SoloTrainingService {
-
-    CurriculumListResponse generateTrainingCurriculum(GenerateCurriculumRequest generateCurriculumRequest);
 
     SessionDTO getSession(UserDetails userDetails);
 
@@ -17,9 +15,4 @@ public interface SoloTrainingService {
 
     SongListDTO.SongDTO getSong(Long songId, String type);
 
-    CurrentTrainingListDTO getCurrentTrainingList(UserDetails userDetails);
-
-    TrainingDTO setTrainingProgress(UserDetails userDetails, Long trainingId, Integer progress);
-
-    VocalAnalysisReportDTO generateVocalAnalysisReport(String recordingFileUrl, GenerateVocalAnalysisReportRequest generateVocalAnalysisReportRequest);
 }
