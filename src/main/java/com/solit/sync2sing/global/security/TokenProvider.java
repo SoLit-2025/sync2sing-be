@@ -68,7 +68,6 @@ public class TokenProvider {
 
     }
 
-    // Token에서 email 추출
     public String getUsernameFromToken(String token) {
         Claims claims = Jwts.parser()
                 .setSigningKey(secretKey)
