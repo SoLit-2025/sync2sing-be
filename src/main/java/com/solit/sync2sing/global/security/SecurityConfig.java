@@ -9,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -42,5 +43,4 @@ public class SecurityConfig {
                 .logout(logout -> logout.disable());
         return http.build();
     }
-
 }

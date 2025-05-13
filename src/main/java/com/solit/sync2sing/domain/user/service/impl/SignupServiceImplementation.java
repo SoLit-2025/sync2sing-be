@@ -67,7 +67,7 @@ public class SignupServiceImplementation implements UserSignupService {
                 .build();
     }
 
-    // 공통 검증 로직을 구현체 내부로 이동
+
     private void validateRequest(SignupRequestDTO requestDTO) {
         if (requestDTO.getUsername() == null || requestDTO.getPassword() == null || requestDTO.getNickname() == null) {
             throw new ResponseStatusException(
