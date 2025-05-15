@@ -51,7 +51,7 @@ public class LogoutServiceImplementation implements UserLogoutService {
             );
         }
 
-        // 4. AccessToken 블랙리스트 등록
+        // AccessToken 블랙리스트 등록
         Long expiration = tokenProvider.getExpirationFromToken(accessToken);
         if (expiration <= 0) {
             throw new ResponseStatusException(
