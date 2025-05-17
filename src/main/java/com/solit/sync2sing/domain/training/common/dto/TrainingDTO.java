@@ -14,18 +14,18 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TrainingDTO {
     private Long id;
-    private TrainingCategory category;
+    private String category;
     private String title;
-    private TrainingGrade grade;
+    private String grade;
     private String description;
     private Integer trainingMinutes;
 
     public static TrainingDTO toDTO(Training training) {
         return TrainingDTO.builder()
             .id(training.getId())
-            .category(TrainingCategory.valueOf(training.getCategory()))
+            .category(String.valueOf(training.getCategory()))
             .title(training.getTitle())
-            .grade(TrainingGrade.valueOf(training.getGrade()))
+            .grade(String.valueOf(training.getGrade()))
             .description(training.getDescription())
             .trainingMinutes(training.getTrainingMinutes())
             .build();

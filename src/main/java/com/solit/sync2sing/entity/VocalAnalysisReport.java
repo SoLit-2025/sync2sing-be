@@ -1,15 +1,17 @@
 package com.solit.sync2sing.entity;
 
+import com.solit.sync2sing.global.type.SessionStatus;
+import com.solit.sync2sing.global.type.TrainingMode;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.springframework.data.annotation.CreatedDate;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -35,15 +37,15 @@ public class VocalAnalysisReport {
     @Column(name = "title", nullable = false)
     private String title;
 
-    @Size(max = 10)
+    @Enumerated(EnumType.STRING)
     @NotNull
     @Column(name = "training_mode", nullable = false, length = 10)
-    private String trainingMode;
+    private TrainingMode trainingMode;
 
-    @Size(max = 10)
+    @Enumerated(EnumType.STRING)
     @NotNull
     @Column(name = "report_type", nullable = false, length = 10)
-    private String reportType;
+    private SessionStatus reportType;
 
     @NotNull
     @Column(name = "pitch_score", nullable = false)
@@ -88,8 +90,8 @@ public class VocalAnalysisReport {
     private String feedbackContent;
 
     @NotNull
-    @ColumnDefault("CURRENT_TIMESTAMP")
+    @CreatedDate
     @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
 }

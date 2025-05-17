@@ -1,5 +1,7 @@
 package com.solit.sync2sing.entity;
 
+import com.solit.sync2sing.global.type.TrainingMode;
+import com.solit.sync2sing.global.type.VoiceType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -31,10 +33,10 @@ public class Song {
     @JoinColumn(name = "album_cover_file_id", nullable = false)
     private ImageFile albumCoverFile;
 
-    @Size(max = 10)
+    @Enumerated(EnumType.STRING)
     @NotNull
     @Column(name = "training_mode", nullable = false, length = 10)
-    private String trainingMode;
+    private TrainingMode trainingMode;
 
     @Size(max = 255)
     @NotNull
@@ -46,10 +48,10 @@ public class Song {
     @Column(name = "artist", nullable = false)
     private String artist;
 
-    @Size(max = 50)
+    @Enumerated(EnumType.STRING)
     @NotNull
     @Column(name = "voice_type", nullable = false, length = 50)
-    private String voiceType;
+    private VoiceType voiceType;
 
     @Size(max = 255)
     @NotNull

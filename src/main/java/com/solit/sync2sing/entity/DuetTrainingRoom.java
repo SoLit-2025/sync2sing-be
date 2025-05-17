@@ -1,13 +1,14 @@
 package com.solit.sync2sing.entity;
 
+import com.solit.sync2sing.global.type.DuetTrainingRoomStatus;
+import com.solit.sync2sing.global.type.VoiceType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
+import org.springframework.data.annotation.CreatedDate;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -37,27 +38,26 @@ public class DuetTrainingRoom {
     @JoinColumn(name = "partner_user_part_id")
     private DuetSongPart partnerUserPart;
 
-    @Size(max = 50)
+    @Enumerated(EnumType.STRING)
     @Column(name = "partner_voice_type_preference", length = 50)
-    private String partnerVoiceTypePreference;
+    private VoiceType partnerVoiceTypePreference;
 
-    @Size(max = 50)
+    @Enumerated(EnumType.STRING)
     @NotNull
-    @ColumnDefault("'PENDING'")
     @Column(name = "status", nullable = false, length = 50)
-    private String status;
+    private DuetTrainingRoomStatus status = DuetTrainingRoomStatus.PENDING;
 
     @NotNull
     @Column(name = "pre_recording_due_date", nullable = false)
-    private Instant preRecordingDueDate;
+    private LocalDateTime preRecordingDueDate;
 
     @NotNull
     @Column(name = "post_recording_due_date", nullable = false)
-    private Instant postRecordingDueDate;
+    private LocalDateTime postRecordingDueDate;
 
     @NotNull
-    @ColumnDefault("CURRENT_TIMESTAMP")
+    @CreatedDate
     @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
 }

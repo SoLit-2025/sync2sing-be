@@ -16,16 +16,16 @@ import lombok.NoArgsConstructor;
 public class GenerateCurriculumRequest {
 
     @NotNull
-    private TrainingGrade pitch;
+    private String pitch;
 
     @NotNull
-    private TrainingGrade rhythm;
+    private String rhythm;
 
     @NotNull
-    private TrainingGrade vocalization;
+    private String vocalization;
 
     @NotNull
-    private TrainingGrade breath;
+    private String breath;
 
     @Min(3)
     @Max(14)

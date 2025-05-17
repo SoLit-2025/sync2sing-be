@@ -1,15 +1,15 @@
 package com.solit.sync2sing.entity;
 
+import com.solit.sync2sing.global.type.SessionStatus;
+import com.solit.sync2sing.global.type.TrainingMode;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -32,10 +32,10 @@ public class TrainingSession {
     @JoinColumn(name = "song_id", nullable = false)
     private Song song;
 
-    @Size(max = 50)
+    @Enumerated(EnumType.STRING)
     @NotNull
     @Column(name = "training_mode", nullable = false, length = 50)
-    private String trainingMode;
+    private TrainingMode trainingMode;
 
     @NotNull
     @Column(name = "key_adjustment", nullable = false)
@@ -45,18 +45,17 @@ public class TrainingSession {
     @Column(name = "curriculum_days", nullable = false)
     private Integer curriculumDays;
 
-    @Size(max = 50)
+    @Enumerated(EnumType.STRING)
     @NotNull
-    @ColumnDefault("'BEFORE_TRAINING'")
     @Column(name = "status", nullable = false, length = 50)
-    private String status;
+    private SessionStatus status = SessionStatus.BEFORE_TRAINING;
 
     @NotNull
     @Column(name = "curriculum_start_date", nullable = false)
-    private Instant curriculumStartDate;
+    private LocalDateTime curriculumStartDate;
 
     @NotNull
     @Column(name = "curriculum_end_date", nullable = false)
-    private Instant curriculumEndDate;
+    private LocalDateTime curriculumEndDate;
 
 }
