@@ -2,8 +2,8 @@ package com.solit.sync2sing.domain.user.service.impl;
 
 import com.solit.sync2sing.domain.user.dto.request.LoginRequestDTO;
 import com.solit.sync2sing.domain.user.dto.response.LoginResponseDTO;
-import com.solit.sync2sing.domain.user.entity.UserEntity;
-import com.solit.sync2sing.domain.user.repository.UserRepository;
+import com.solit.sync2sing.entity.User;
+import com.solit.sync2sing.repository.UserRepository;
 import com.solit.sync2sing.domain.user.service.UserLoginService;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.security.TokenProvider;
@@ -28,7 +28,7 @@ public class LoginServiceImplementation implements UserLoginService {
         String username = requestDTO.getUsername();
         String password = requestDTO.getPassword();
 
-        UserEntity user = userRepository.findByUsername(username)
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResponseStatusException(
                         ResponseCode.USER_NOT_FOUND.getStatus(),
                         ResponseCode.USER_NOT_FOUND.getMessage()

@@ -1,20 +1,24 @@
 package com.solit.sync2sing.entity;
 
+import com.solit.sync2sing.global.type.Gender;
+import com.solit.sync2sing.global.type.VoiceType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Getter
 @Setter
 @Entity
+@Builder
 @Table(name = "user")
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,19 +40,19 @@ public class User {
     @Column(name = "nickname", nullable = false)
     private String nickname;
 
-    @Size(max = 10)
+    @Enumerated(EnumType.STRING)
     @NotNull
     @Column(name = "gender", nullable = false, length = 10)
-    private String gender;
+    private Gender gender;
 
     @NotNull
     @Column(name = "age", nullable = false)
     private Integer age;
 
-    @Size(max = 50)
+    @Enumerated(EnumType.STRING)
     @NotNull
     @Column(name = "voice_type", nullable = false, length = 50)
-    private String voiceType;
+    private VoiceType voiceType;
 
     @Size(max = 255)
     @NotNull
@@ -61,7 +65,7 @@ public class User {
     private Integer duetPenaltyCount;
 
     @Column(name = "duet_penalty_until")
-    private Instant duetPenaltyUntil;
+    private LocalDateTime duetPenaltyUntil;
 
     @Size(max = 512)
     @Column(name = "refresh_token", length = 512)
