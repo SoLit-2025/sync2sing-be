@@ -4,10 +4,10 @@ import com.solit.sync2sing.domain.training.base.dto.CreateSessionRequest;
 import com.solit.sync2sing.domain.training.solo.service.SoloTrainingService;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.response.ResponseDTO;
+import com.solit.sync2sing.global.security.CustomUserDetails;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,7 +25,7 @@ public class SoloTrainingController {
     
     @GetMapping("/session")
     public ResponseEntity<ResponseDTO> getSession(
-            @AuthenticationPrincipal UserDetails userDetails
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         return ResponseEntity
             .status(HttpStatus.OK)
@@ -37,7 +37,7 @@ public class SoloTrainingController {
 
     @PostMapping("/session")
     public ResponseEntity<ResponseDTO> createSession(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody CreateSessionRequest createSessionRequest
     ) {
         return ResponseEntity
@@ -50,7 +50,7 @@ public class SoloTrainingController {
 
     @DeleteMapping("/session")
     public ResponseEntity<ResponseDTO> deleteSession(
-            @AuthenticationPrincipal UserDetails userDetails
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         soloTrainingService.deleteSession(userDetails);
         return ResponseEntity

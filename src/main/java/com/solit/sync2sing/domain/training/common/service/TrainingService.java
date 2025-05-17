@@ -8,12 +8,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 public interface TrainingService {
     
-    CurriculumListResponse generateTrainingCurriculum(GenerateCurriculumRequest generateCurriculumRequest);
+    CurriculumListResponse generateTrainingCurriculum(CustomUserDetails userDetails, GenerateCurriculumRequest generateCurriculumRequest);
 
-    TrainingDTO setTrainingProgress(SetTrainingProgressRequest setTrainingProgressRequest, Long sessionId, Long trainingId);
+    TrainingDTO setTrainingProgress(CustomUserDetails userDetails, SetTrainingProgressRequest setTrainingProgressRequest, Long sessionId, Long trainingId);
 
-    CurrentTrainingListDTO getCurrentTrainingList();
+    CurrentTrainingListDTO getCurrentTrainingList(CustomUserDetails userDetails);
 
     VocalAnalysisReportDTO generateVocalAnalysisReport(String recordingFileUrl, GenerateVocalAnalysisReportRequest generateVocalAnalysisReportRequest);
-
 }

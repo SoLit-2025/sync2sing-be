@@ -25,28 +25,32 @@ public class TrainingController {
     
     @PostMapping("/curriculum")
     public ResponseEntity<ResponseDTO> generateTrainingCurriculum(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody GenerateCurriculumRequest generateCurriculumRequest
     ) {
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(new ResponseDTO(
                 ResponseCode.CURRICULUM_CREATED,
-                trainingService.generateTrainingCurriculum(generateCurriculumRequest)
+                trainingService.generateTrainingCurriculum(userDetails, generateCurriculumRequest)
             ));
     }
 
     @GetMapping("/training")
-    public ResponseEntity<ResponseDTO> getCurrentTrainingList() {
+    public ResponseEntity<ResponseDTO> getCurrentTrainingList(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(new ResponseDTO(
                 ResponseCode.CURRENT_TRAINING_LIST_FETCHED,
-                trainingService.getCurrentTrainingList()
+                trainingService.getCurrentTrainingList(userDetails)
             ));
     }
 
     @PutMapping("/training/sessions/{session_id}/trainings/{training_id}/progress")
     public ResponseEntity<ResponseDTO> setTrainingProgress(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long sessionId,
             @PathVariable Long trainingId,
             @RequestBody SetTrainingProgressRequest setTrainingProgressRequest
@@ -55,7 +59,7 @@ public class TrainingController {
             .status(HttpStatus.OK)
             .body(new ResponseDTO(
                 ResponseCode.TRAINING_PROGRESS_UPDATED,
-                trainingService.setTrainingProgress(setTrainingProgressRequest, sessionId, trainingId)
+                trainingService.setTrainingProgress(userDetails,setTrainingProgressRequest, sessionId, trainingId)
             ));
     }
 

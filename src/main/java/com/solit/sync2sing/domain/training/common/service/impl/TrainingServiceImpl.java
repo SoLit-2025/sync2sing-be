@@ -9,7 +9,6 @@ import com.solit.sync2sing.global.security.CustomUserDetails;
 import com.solit.sync2sing.global.type.SessionStatus;
 import com.solit.sync2sing.global.type.TrainingCategory;
 import com.solit.sync2sing.global.type.TrainingGrade;
-import com.solit.sync2sing.global.util.SecurityUtil;
 import com.solit.sync2sing.repository.TrainingRepository;
 import com.solit.sync2sing.repository.TrainingSessionRepository;
 import com.solit.sync2sing.repository.TrainingSessionTrainingRepository;
@@ -30,10 +29,11 @@ class TrainingServiceImpl implements TrainingService {
     private final TrainingSessionTrainingRepository trainingSessionTrainingRepository;
     private final UserTrainingLogRepository userTrainingLogRepository;
 
-    private final CustomUserDetails userDetails = SecurityUtil.getCurrentUser();
-
     @Override
-    public CurriculumListResponse generateTrainingCurriculum(GenerateCurriculumRequest request) {
+    public CurriculumListResponse generateTrainingCurriculum(
+            CustomUserDetails userDetails,
+            GenerateCurriculumRequest request
+    ) {
         int trainingCountPerCategory = switch (request.getTrainingDays()) {
             case 3 -> 1;
             case 7 -> 2;
@@ -41,21 +41,26 @@ class TrainingServiceImpl implements TrainingService {
             default -> throw new IllegalArgumentException("trainingDays는 3, 7, 14 중 하나여야 합니다.");
         };
 
-        Long userId = SecurityUtil.getCurrentUser().getId();
+        Long userId = userDetails.getId();
 
         Set<Long> trainedIds = userTrainingLogRepository.findTrainedTrainingIdsByUserId(userId);
 
         return CurriculumListResponse.builder()
-                .pitch(pickTrainings(TrainingCategory.PITCH, request.getPitch(), trainingCountPerCategory, trainedIds))
-                .rhythm(pickTrainings(TrainingCategory.RHYTHM, request.getRhythm(), trainingCountPerCategory, trainedIds))
-                .vocalization(pickTrainings(TrainingCategory.VOCALIZATION, request.getVocalization(), trainingCountPerCategory, trainedIds))
-                .breath(pickTrainings(TrainingCategory.BREATH, request.getBreath(), trainingCountPerCategory, trainedIds))
+                .pitch(pickTrainings(TrainingCategory.PITCH, TrainingGrade.valueOf(request.getPitch()), trainingCountPerCategory, trainedIds))
+                .rhythm(pickTrainings(TrainingCategory.RHYTHM, TrainingGrade.valueOf(request.getRhythm()), trainingCountPerCategory, trainedIds))
+                .vocalization(pickTrainings(TrainingCategory.VOCALIZATION, TrainingGrade.valueOf(request.getVocalization()), trainingCountPerCategory, trainedIds))
+                .breath(pickTrainings(TrainingCategory.BREATH, TrainingGrade.valueOf(request.getBreath()), trainingCountPerCategory, trainedIds))
                 .build();
     }
 
-    private List<TrainingDTO> pickTrainings(TrainingCategory category, TrainingGrade grade, int count, Set<Long> trainedIds) {
-        List<Training> allTrainings = trainingRepository.findByCategory(category.name()).stream()
-                .filter(t -> t.getGrade().equals(grade.name()))
+    private List<TrainingDTO> pickTrainings(
+            TrainingCategory category,
+            TrainingGrade grade,
+            int count,
+            Set<Long> trainedIds
+    ) {
+        List<Training> allTrainings = trainingRepository.findByCategory(category).stream()
+                .filter(t -> t.getGrade().name().equals(grade.name()))
                 .toList();
 
         List<Training> selected = allTrainings.stream()
@@ -82,7 +87,11 @@ class TrainingServiceImpl implements TrainingService {
 
 
     @Override
-    public TrainingDTO setTrainingProgress(SetTrainingProgressRequest request, Long sessionId, Long trainingId) {
+    public TrainingDTO setTrainingProgress(
+            CustomUserDetails userDetails,
+            SetTrainingProgressRequest request,
+            Long sessionId,
+            Long trainingId) {
         TrainingSession session = trainingSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalStateException("진행 중인 트레이닝 세션이 없습니다."));
 
@@ -99,11 +108,13 @@ class TrainingServiceImpl implements TrainingService {
     }
 
     @Override
-    public CurrentTrainingListDTO getCurrentTrainingList() {
+    public CurrentTrainingListDTO getCurrentTrainingList(
+            CustomUserDetails userDetails
+    ) {
         CurrentTrainingListDTO result = new CurrentTrainingListDTO();
 
         List<TrainingSession> inProgressSessions =
-                trainingSessionRepository.findByUserIdAndStatus(SecurityUtil.getCurrentUser().getId(),
+                trainingSessionRepository.findByUserIdAndStatus(userDetails.getId(),
                         SessionStatus.TRAINING_IN_PROGRESS);
 
         if (inProgressSessions.isEmpty()) {
@@ -114,7 +125,7 @@ class TrainingServiceImpl implements TrainingService {
             List<TrainingSessionTraining> inProgressSessionTrainings =
                     trainingSessionTrainingRepository.findByTrainingSession(session);
 
-            Map<String, TrainingSessionTraining> currentByCategory = inProgressSessionTrainings.stream()
+            Map<TrainingCategory, TrainingSessionTraining> currentByCategory = inProgressSessionTrainings.stream()
                     .filter(training -> training.getProgress() < 100)
                     .collect(Collectors.groupingBy(
                             training -> training.getTraining().getCategory(),
@@ -132,19 +143,19 @@ class TrainingServiceImpl implements TrainingService {
                 CurrentTrainingListDTO.CurrentTrainingDTO ct = CurrentTrainingListDTO.CurrentTrainingDTO.builder()
                         .id(t.getId())
                         .sessionId(session.getId())
-                        .category(t.getCategory())
+                        .category(String.valueOf(t.getCategory()))
                         .title(t.getTitle())
                         .description(t.getDescription())
-                        .grade(t.getGrade())
+                        .grade(String.valueOf(t.getGrade()))
                         .trainingMinutes(t.getTrainingMinutes())
                         .progress(training.getProgress())
                         .isCurrentTraining(true)
                         .build();
 
-                if ("SOLO".equals(session.getTrainingMode())) {
-                    result.getSolo().put(t.getCategory(), ct);
+                if ("SOLO".equals(session.getTrainingMode().name())) {
+                    result.getSolo().put(String.valueOf(t.getCategory()), ct);
                 } else {
-                    result.getDuet().put(t.getCategory(), ct);
+                    result.getDuet().put(String.valueOf(t.getCategory()), ct);
                 }
             }
         }
@@ -153,7 +164,9 @@ class TrainingServiceImpl implements TrainingService {
     }
 
     @Override
-    public VocalAnalysisReportDTO generateVocalAnalysisReport(String recordingFileUrl, GenerateVocalAnalysisReportRequest request) {
+    public VocalAnalysisReportDTO generateVocalAnalysisReport(
+            String recordingFileUrl,
+            GenerateVocalAnalysisReportRequest request) {
         return null;
     }
 
