@@ -2,8 +2,8 @@ package com.solit.sync2sing.domain.user.service.impl;
 
 import com.solit.sync2sing.domain.user.dto.request.LogoutRequestDTO;
 import com.solit.sync2sing.domain.user.dto.response.LogoutResponseDTO;
-import com.solit.sync2sing.domain.user.entity.UserEntity;
-import com.solit.sync2sing.domain.user.repository.UserRepository;
+import com.solit.sync2sing.entity.User;
+import com.solit.sync2sing.repository.UserRepository;
 import com.solit.sync2sing.domain.user.service.UserLogoutService;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.security.TokenProvider;
@@ -36,7 +36,7 @@ public class LogoutServiceImplementation implements UserLogoutService {
 
         String userEmail = tokenProvider.getUsernameFromToken(accessToken);
 
-        UserEntity user = userRepository.findByUsername(userEmail)
+        User user = userRepository.findByUsername(userEmail)
                 .orElseThrow(() -> new ResponseStatusException(
                         ResponseCode.USER_NOT_FOUND.getStatus(),
                         ResponseCode.USER_NOT_FOUND.getMessage()

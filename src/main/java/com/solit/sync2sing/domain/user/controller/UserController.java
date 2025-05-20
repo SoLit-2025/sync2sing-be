@@ -36,11 +36,11 @@ public class UserController {
     @PostMapping("/signup")
     public ResponseEntity<ResponseDTO> signup(@RequestBody SignupRequestDTO signupRequest) {
         try {
-            userSignupService.signUp(signupRequest);
             return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .body(new ResponseDTO(
-                            ResponseCode.SIGNUP_SUCCESS
+                            ResponseCode.SIGNUP_SUCCESS,
+                            userSignupService.signUp(signupRequest)
                     ));
         } catch (Exception e) {
             return ResponseEntity

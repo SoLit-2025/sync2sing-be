@@ -2,8 +2,8 @@ package com.solit.sync2sing.domain.user.service.impl;
 
 import com.solit.sync2sing.domain.user.dto.request.SignupRequestDTO;
 import com.solit.sync2sing.domain.user.dto.response.SignupResponseDTO;
-import com.solit.sync2sing.domain.user.entity.UserEntity;
-import com.solit.sync2sing.domain.user.repository.UserRepository;
+import com.solit.sync2sing.entity.User;
+import com.solit.sync2sing.repository.UserRepository;
 import com.solit.sync2sing.domain.user.service.UserSignupService;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.type.Gender;
@@ -34,7 +34,7 @@ public class SignupServiceImplementation implements UserSignupService {
 
         String encodedPassword = passwordEncoder.encode(requestDTO.getPassword());
 
-        UserEntity userEntity = UserEntity.builder()
+        User userEntity = User.builder()
                 .username(requestDTO.getUsername())
                 .password(encodedPassword)
                 .nickname(requestDTO.getNickname())
