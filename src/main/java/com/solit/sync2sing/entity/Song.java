@@ -5,11 +5,12 @@ import com.solit.sync2sing.global.type.VoiceType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
-@Setter
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @Entity
 @Table(name = "song")
 public class Song {
@@ -19,17 +20,17 @@ public class Song {
     private Long id;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "original_audio_file_id", nullable = false)
     private AudioFile originalAudioFile;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "mr_audio_file_id", nullable = false)
     private AudioFile mrAudioFile;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "album_cover_file_id", nullable = false)
     private ImageFile albumCoverFile;
 
@@ -55,10 +56,10 @@ public class Song {
 
     @NotNull
     @Column(name = "pitch_note_min", nullable = false)
-    private String pitch_note_min;
+    private String pitchNoteMin;
 
     @NotNull
     @Column(name = "pitch_note_max", nullable = false)
-    private String pitch_note_max;
+    private String pitchNoteMax;
 
 }

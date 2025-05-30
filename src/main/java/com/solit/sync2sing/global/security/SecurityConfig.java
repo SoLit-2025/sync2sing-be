@@ -33,7 +33,7 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/user/signup", "/api/user/login").permitAll()
+                        .requestMatchers("/api/user/signup", "/api/user/login", "/admin/song/solo").permitAll()
                         .requestMatchers("/api/user/logout").hasRole("USER")  // 권한 설정
                         .anyRequest().authenticated()
                 )

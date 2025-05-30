@@ -67,6 +67,10 @@ public enum ResponseCode {
     LOGOUT_SUCCESS(HttpStatus.OK, "로그아웃에 성공했습니다."),
     INVALID_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "유효하지 않은 Refresh Token입니다."),
 
+    ADMIN_SOLOSONG_UPLOADED(HttpStatus.CREATED, "솔로곡 업로드에 성공했습니다."),
+    EMPTY_FILE_EXCEPTION(HttpStatus.BAD_REQUEST, "파일이 비어 있습니다."),
+    FILE_UPLOAD_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "파일을 처리하는 중 오류가 발생했습니다."),
+    FILE_UPLOAD_FAIL_S3_ROLLBACK(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드 실패로 S3 롤백되었습니다."),
     ;
 
     private final HttpStatus status;
