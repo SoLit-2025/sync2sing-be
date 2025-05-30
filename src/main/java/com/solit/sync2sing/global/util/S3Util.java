@@ -77,6 +77,13 @@ public class S3Util {
         amazonS3.deleteObject(bucket, fileName);
     }
 
+    public void deletetranscriptFileFromS3(String fileUrl) {
+        String splitStr = ".com/sync2sing-bucket/";
+        String fileName = fileUrl.substring(fileUrl.lastIndexOf(splitStr) + splitStr.length());
+
+        amazonS3.deleteObject(bucket, fileName);
+    }
+
     private String extractExt(String originalFilename) {
         int pos = originalFilename.lastIndexOf(".");
         return originalFilename.substring(pos + 1);

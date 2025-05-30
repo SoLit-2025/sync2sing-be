@@ -1,22 +1,28 @@
 package com.solit.sync2sing.domain.training.common.service.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.solit.sync2sing.domain.training.common.dto.*;
 import com.solit.sync2sing.domain.training.common.service.TrainingService;
-import com.solit.sync2sing.entity.Training;
-import com.solit.sync2sing.entity.TrainingSession;
-import com.solit.sync2sing.entity.TrainingSessionTraining;
+import com.solit.sync2sing.entity.*;
+import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.security.CustomUserDetails;
-import com.solit.sync2sing.global.type.SessionStatus;
-import com.solit.sync2sing.global.type.TrainingCategory;
-import com.solit.sync2sing.global.type.TrainingGrade;
-import com.solit.sync2sing.repository.TrainingRepository;
-import com.solit.sync2sing.repository.TrainingSessionRepository;
-import com.solit.sync2sing.repository.TrainingSessionTrainingRepository;
-import com.solit.sync2sing.repository.UserTrainingLogRepository;
+import com.solit.sync2sing.global.type.*;
+import com.solit.sync2sing.global.util.S3Util;
+import com.solit.sync2sing.global.util.TranscribeUtil;
+import com.solit.sync2sing.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+import software.amazon.awssdk.services.transcribe.model.TranscriptionJob;
+import software.amazon.awssdk.services.transcribe.model.TranscriptionJobStatus;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -24,10 +30,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 class TrainingServiceImpl implements TrainingService {
 
+    private final S3Util s3Util;
+    private final TranscribeUtil transcribeUtil;
+
     private final TrainingRepository trainingRepository;
     private final TrainingSessionRepository trainingSessionRepository;
     private final TrainingSessionTrainingRepository trainingSessionTrainingRepository;
     private final UserTrainingLogRepository userTrainingLogRepository;
+    private final SongRepository songRepository;
+    private final VocalAnalysisReportRepository vocalAnalysisReportRepository;
+
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
     @Override
     public CurriculumListResponse generateTrainingCurriculum(
@@ -164,10 +178,153 @@ class TrainingServiceImpl implements TrainingService {
     }
 
     @Override
-    public VocalAnalysisReportDTO generateVocalAnalysisReport(
-            String recordingFileUrl,
-            GenerateVocalAnalysisReportRequest request) {
+    public GenerateVocalAnalysisReportResponse generateVocalAnalysisReport(
+            CustomUserDetails userDetails,
+            MultipartFile vocalFile,
+            GenerateVocalAnalysisReportRequest request
+    ) {
+        String mode = request.getTrainingMode();
+        String type = request.getAnalysisType();
+
+        if (type.equals("GUEST")) {
+            return guestAnalysis(vocalFile, request);
+        } else if (type.equals("PRE")) {
+            return preAnalysis(vocalFile, request, userDetails);
+        } else if (mode.equals("SOLO") && type.equals("POST")) {
+            return soloPostAnalysis(vocalFile, request, userDetails);
+        } else if (mode.equals("DUET") && type.equals("POST")) {
+            return duetPostAnalysis(vocalFile, request, userDetails);
+        } else {
+            throw new IllegalArgumentException("잘못된 분석 요청");
+        }
+    }
+
+    private PreVocalAnalysisReportResponse guestAnalysis(
+            MultipartFile vocalFile,
+            GenerateVocalAnalysisReportRequest request
+    ) {
+        Song guestSong = songRepository.findByTitle("Do-Re-Mi");
+
+        String transcriptFileUri = null;
+        String recordingAudioS3Url = null;
+
+        try {
+            recordingAudioS3Url = s3Util.saveRecordingAudioToS3(vocalFile);
+
+            String jobName = "transcripts_job-" + UUID.randomUUID();
+            transcribeUtil.startTranscription(jobName, recordingAudioS3Url);
+
+            TranscriptionJob job = null;
+            int attempts = 0;
+
+            do {
+                Thread.sleep(5000);
+                job = transcribeUtil.getJob(jobName);
+                attempts++;
+            } while (job.transcriptionJobStatus() != TranscriptionJobStatus.COMPLETED && attempts < 10);
+
+            if (job.transcriptionJobStatus() != TranscriptionJobStatus.COMPLETED) {
+                throw new IllegalStateException("Transcription job did not complete in time");
+            }
+
+            transcriptFileUri = job.transcript().transcriptFileUri();
+            String transcriptText = getTranscriptText(transcriptFileUri);
+
+            System.out.println("transcriptText: " + transcriptText);
+
+            String lyricText =
+                    "Doe(Do), a deer, a female deer " +
+                    "Ray(Re), a drop of golden sun";
+
+            int pronunciationScore = calculateSimilarityScore(transcriptText, lyricText);
+
+            // 호흡 평가
+            int breathScore = 60;
+
+            // TODO: 6/4 이후 GPT api 연결 (발성 태그, 점수 기반)
+            String overallReviewTitle = "호흡이 큰 장점이지만, 음정과 박자에 안정이 필요해요";
+            String overallReviewContent = "전반적으로 음정과 박자 정확도가 우수하나, 발성과 호흡 조절에서 약간의 개선이 필요합니다.";
+            String causeContent = "코드 변화를 정확히 인지하지 못해 화성 진행에 따른 음의 변화를 자연스럽게 표현하기 어려워요.";
+            String proposalContent = "주요 코드(C, F, G)의 느낌을 익히고, 단순한 발성 연습부터 시작해 듣기 훈련을 병행하세요.";
+
+            System.out.println("transcriptFileUri: " + transcriptFileUri);
+            s3Util.deletetranscriptFileFromS3(transcriptFileUri);
+            s3Util.deleteFileFromS3(recordingAudioS3Url);
+
+            VocalAnalysisReport vocalAnalysisReport = VocalAnalysisReport.builder()
+                    .song(guestSong)
+                    .title(vocalAnalysisReportTitle("Do-Re-Mi"))
+                    .trainingMode(TrainingMode.SOLO)
+                    .reportType(RecordingContext.GUEST)
+                    .pitchScore(request.getPitchAccuracy())
+                    .beatScore(request.getBeatAccuracy())
+                    .pronunciationScore(pronunciationScore)
+                    .breathScore(breathScore)
+                    .overallReviewTitle(overallReviewTitle)
+                    .overallReviewContent(overallReviewContent)
+                    .causeContent(causeContent)
+                    .proposalContent(proposalContent)
+                    .build();
+
+            vocalAnalysisReportRepository.save(vocalAnalysisReport);
+
+            return PreVocalAnalysisReportResponse.toDTO(vocalAnalysisReport);
+        } catch (Exception e) {
+            if (transcriptFileUri != null) s3Util.deleteFileFromS3(transcriptFileUri);
+            if (recordingAudioS3Url != null) s3Util.deleteFileFromS3(recordingAudioS3Url);
+
+            throw new ResponseStatusException(
+                    ResponseCode.FILE_UPLOAD_FAIL_S3_ROLLBACK.getStatus(),
+                    ResponseCode.FILE_UPLOAD_FAIL_S3_ROLLBACK.getMessage()
+            );
+        }
+    }
+
+    private PreVocalAnalysisReportResponse preAnalysis(
+            MultipartFile vocalFile,
+            GenerateVocalAnalysisReportRequest request,
+            CustomUserDetails userDetails
+    ) {
         return null;
     }
 
+    private GenerateVocalAnalysisReportResponse soloPostAnalysis(
+            MultipartFile vocalFile,
+            GenerateVocalAnalysisReportRequest request,
+            CustomUserDetails userDetails
+    ) {
+        return null;
+    }
+
+    private GenerateVocalAnalysisReportResponse duetPostAnalysis(
+            MultipartFile vocalFile,
+            GenerateVocalAnalysisReportRequest request,
+            CustomUserDetails userDetails
+    ) {
+        return null;
+    }
+
+    private String vocalAnalysisReportTitle(String songTitle) {
+        String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        return date + " " + songTitle;
+    }
+
+    public String getTranscriptText(String transcriptFileUri) {
+        try {
+            String json = restTemplate.getForObject(transcriptFileUri, String.class);
+            JsonNode node = objectMapper.readTree(json);
+            return node.path("results").path("transcripts").get(0).path("transcript").asText();
+        } catch (Exception e) {
+            throw new RuntimeException("Transcribe 결과 파싱 실패", e);
+        }
+    }
+
+    public int calculateSimilarityScore(String sttText, String reference) {
+        LevenshteinDistance ld = new LevenshteinDistance();
+        int distance = ld.apply(sttText, reference);
+        int maxLen = Math.max(sttText.length(), reference.length());
+
+        // 100점 만점 스케일로 변환
+        return (int) ((1.0 - ((double) distance / maxLen)) * 100);
+    }
 }
