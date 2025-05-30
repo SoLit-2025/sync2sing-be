@@ -54,10 +54,13 @@ public class User {
     @Column(name = "voice_type", nullable = false, length = 50)
     private VoiceType voiceType;
 
-    @Size(max = 255)
     @NotNull
-    @Column(name = "voice_range", nullable = false)
-    private String voiceRange;
+    @Column(name = "pitch_note_min", nullable = false)
+    private String pitchNoteMin;
+
+    @NotNull
+    @Column(name = "pitch_note_max", nullable = false)
+    private String pitchNoteMax;
 
     @NotNull
     @ColumnDefault("0")
