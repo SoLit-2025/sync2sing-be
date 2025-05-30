@@ -1,5 +1,6 @@
 package com.solit.sync2sing.entity;
 
+import com.solit.sync2sing.global.entity.BaseEntity;
 import com.solit.sync2sing.global.type.TrainingMode;
 import com.solit.sync2sing.global.type.VoiceType;
 import jakarta.persistence.*;
@@ -13,7 +14,7 @@ import lombok.*;
 @AllArgsConstructor
 @Entity
 @Table(name = "song")
-public class Song {
+public class Song extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)

@@ -1,5 +1,6 @@
 package com.solit.sync2sing.entity;
 
+import com.solit.sync2sing.global.entity.BaseEntity;
 import com.solit.sync2sing.global.type.Gender;
 import com.solit.sync2sing.global.type.VoiceType;
 import jakarta.persistence.*;
@@ -19,7 +20,7 @@ import java.util.List;
 @Table(name = "user")
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class User extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)

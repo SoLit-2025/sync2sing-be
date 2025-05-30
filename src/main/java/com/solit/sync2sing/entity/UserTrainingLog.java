@@ -1,5 +1,6 @@
 package com.solit.sync2sing.entity;
 
+import com.solit.sync2sing.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -12,7 +13,7 @@ import org.hibernate.annotations.OnDeleteAction;
 @Setter
 @Entity
 @Table(name = "user_training_log")
-public class UserTrainingLog {
+public class UserTrainingLog extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)

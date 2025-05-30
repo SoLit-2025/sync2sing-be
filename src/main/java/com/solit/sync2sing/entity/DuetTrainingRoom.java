@@ -1,5 +1,6 @@
 package com.solit.sync2sing.entity;
 
+import com.solit.sync2sing.global.entity.BaseEntity;
 import com.solit.sync2sing.global.type.DuetTrainingRoomStatus;
 import com.solit.sync2sing.global.type.VoiceType;
 import jakarta.persistence.*;
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "duet_training_room")
-public class DuetTrainingRoom {
+public class DuetTrainingRoom extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -54,10 +55,5 @@ public class DuetTrainingRoom {
     @NotNull
     @Column(name = "post_recording_due_date", nullable = false)
     private LocalDateTime postRecordingDueDate;
-
-    @NotNull
-    @CreatedDate
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
 
 }
