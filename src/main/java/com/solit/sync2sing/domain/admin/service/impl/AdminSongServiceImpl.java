@@ -1,5 +1,6 @@
 package com.solit.sync2sing.domain.admin.service.impl;
 
+import com.solit.sync2sing.domain.admin.dto.AdminSoloSongDeleteRequest;
 import com.solit.sync2sing.domain.admin.dto.AdminSoloSongUploadRequest;
 import com.solit.sync2sing.domain.admin.service.AdminSongService;
 import com.solit.sync2sing.entity.AudioFile;
@@ -76,5 +77,17 @@ public class AdminSongServiceImpl implements AdminSongService {
                     ResponseCode.FILE_UPLOAD_FAIL_S3_ROLLBACK.getMessage()
             );
         }
+    }
+
+    @Override
+    public void adminSoloSongDelete(AdminSoloSongDeleteRequest request) {
+        Song song = songRepository.findById(request.getSongId())
+                .orElseThrow(() -> new IllegalArgumentException("해당 곡을 찾을 수 없습니다"));
+
+        s3Util.deleteFileFromS3(song.getOriginalAudioFile().getFileUrl());
+        s3Util.deleteFileFromS3(song.getMrAudioFile().getFileUrl());
+        s3Util.deleteFileFromS3(song.getAlbumCoverFile().getFileUrl());
+
+        songRepository.delete(song);
     }
 }
