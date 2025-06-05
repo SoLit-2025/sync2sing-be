@@ -19,7 +19,7 @@ public class TranscribeUtil {
         StartTranscriptionJobRequest request = StartTranscriptionJobRequest.builder()
                 .transcriptionJobName(jobName)
                 .media(Media.builder().mediaFileUri(mediaUri).build())
-                .mediaFormat("mp3")
+                .mediaFormat("wav")
                 .identifyLanguage(true)
                 .outputBucketName(bucket)
                 .build();

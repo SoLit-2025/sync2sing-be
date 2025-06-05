@@ -233,8 +233,8 @@ class TrainingServiceImpl implements TrainingService {
             System.out.println("transcriptText: " + transcriptText);
 
             String lyricText =
-                    "Doe(Do), a deer, a female deer " +
-                    "Ray(Re), a drop of golden sun";
+                    "Doe, a deer, a female deer " +
+                    "Ray, a drop of golden sun";
 
             int pronunciationScore = calculateSimilarityScore(transcriptText, lyricText);
 
@@ -247,7 +247,6 @@ class TrainingServiceImpl implements TrainingService {
             String causeContent = "코드 변화를 정확히 인지하지 못해 화성 진행에 따른 음의 변화를 자연스럽게 표현하기 어려워요.";
             String proposalContent = "주요 코드(C, F, G)의 느낌을 익히고, 단순한 발성 연습부터 시작해 듣기 훈련을 병행하세요.";
 
-            System.out.println("transcriptFileUri: " + transcriptFileUri);
             s3Util.deletetranscriptFileFromS3(transcriptFileUri);
             s3Util.deleteFileFromS3(recordingAudioS3Url);
 
