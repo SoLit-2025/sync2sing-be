@@ -5,15 +5,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.solit.sync2sing.domain.training.common.dto.*;
 import com.solit.sync2sing.domain.training.common.service.TrainingService;
 import com.solit.sync2sing.entity.*;
+import com.solit.sync2sing.global.ai.dto.AiVoiceAnalysisResponse;
+import com.solit.sync2sing.global.ai.service.AiService;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.security.CustomUserDetails;
 import com.solit.sync2sing.global.type.*;
 import com.solit.sync2sing.global.util.S3Util;
-import com.solit.sync2sing.global.util.TranscribeUtil;
+import com.solit.sync2sing.global.transcription.service.transcriptionService;
 import com.solit.sync2sing.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.text.similarity.LevenshteinDistance;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,6 +27,8 @@ import software.amazon.awssdk.services.transcribe.model.TranscriptionJobStatus;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,7 +36,9 @@ import java.util.stream.Collectors;
 class TrainingServiceImpl implements TrainingService {
 
     private final S3Util s3Util;
-    private final TranscribeUtil transcribeUtil;
+
+    private final transcriptionService transcriptionService;
+    private final AiService aiService;
 
     private final TrainingRepository trainingRepository;
     private final TrainingSessionRepository trainingSessionRepository;
@@ -39,9 +46,6 @@ class TrainingServiceImpl implements TrainingService {
     private final UserTrainingLogRepository userTrainingLogRepository;
     private final SongRepository songRepository;
     private final VocalAnalysisReportRepository vocalAnalysisReportRepository;
-
-    private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
 
     @Override
     public CurriculumListResponse generateTrainingCurriculum(
@@ -205,32 +209,22 @@ class TrainingServiceImpl implements TrainingService {
     ) {
         Song guestSong = songRepository.findByTitle("Do-Re-Mi");
 
-        String transcriptFileUri = null;
         String recordingAudioS3Url = null;
 
         try {
             recordingAudioS3Url = s3Util.saveRecordingAudioToS3(vocalFile);
-
             String jobName = "transcripts_job-" + UUID.randomUUID();
-            transcribeUtil.startTranscription(jobName, recordingAudioS3Url);
 
-            TranscriptionJob job = null;
-            int attempts = 0;
+            CompletableFuture<String> transcriptFuture = transcriptionService.transcribeAndGetText(jobName, recordingAudioS3Url);
+            CompletableFuture<AiVoiceAnalysisResponse> aiFuture = aiService.analyzeWithAiServer(recordingAudioS3Url);
 
-            do {
-                Thread.sleep(5000);
-                job = transcribeUtil.getJob(jobName);
-                attempts++;
-            } while (job.transcriptionJobStatus() != TranscriptionJobStatus.COMPLETED && attempts < 10);
+            String transcriptText = transcriptFuture.get(60, TimeUnit.SECONDS);
+            AiVoiceAnalysisResponse aiResult = aiFuture.get(60, TimeUnit.SECONDS);
 
-            if (job.transcriptionJobStatus() != TranscriptionJobStatus.COMPLETED) {
-                throw new IllegalStateException("Transcription job did not complete in time");
+            for (int i = 0; i < aiResult.getData().getTop_voice_types().size(); i++) {
+                double ratio = aiResult.getData().getTop_voice_types().get(i).getRatio();
+                System.out.println(aiResult.getData().getTop_voice_types().get(i).getType() + " " + String.format("%.3f", ratio));
             }
-
-            transcriptFileUri = job.transcript().transcriptFileUri();
-            String transcriptText = getTranscriptText(transcriptFileUri);
-
-            System.out.println("transcriptText: " + transcriptText);
 
             String lyricText =
                     "Doe, a deer, a female deer " +
@@ -247,7 +241,6 @@ class TrainingServiceImpl implements TrainingService {
             String causeContent = "코드 변화를 정확히 인지하지 못해 화성 진행에 따른 음의 변화를 자연스럽게 표현하기 어려워요.";
             String proposalContent = "주요 코드(C, F, G)의 느낌을 익히고, 단순한 발성 연습부터 시작해 듣기 훈련을 병행하세요.";
 
-            s3Util.deletetranscriptFileFromS3(transcriptFileUri);
             s3Util.deleteFileFromS3(recordingAudioS3Url);
 
             VocalAnalysisReport vocalAnalysisReport = VocalAnalysisReport.builder()
@@ -269,7 +262,6 @@ class TrainingServiceImpl implements TrainingService {
 
             return PreVocalAnalysisReportResponse.toDTO(vocalAnalysisReport);
         } catch (Exception e) {
-            if (transcriptFileUri != null) s3Util.deleteFileFromS3(transcriptFileUri);
             if (recordingAudioS3Url != null) s3Util.deleteFileFromS3(recordingAudioS3Url);
 
             throw new ResponseStatusException(
@@ -308,15 +300,7 @@ class TrainingServiceImpl implements TrainingService {
         return date + " " + songTitle;
     }
 
-    public String getTranscriptText(String transcriptFileUri) {
-        try {
-            String json = restTemplate.getForObject(transcriptFileUri, String.class);
-            JsonNode node = objectMapper.readTree(json);
-            return node.path("results").path("transcripts").get(0).path("transcript").asText();
-        } catch (Exception e) {
-            throw new RuntimeException("Transcribe 결과 파싱 실패", e);
-        }
-    }
+
 
     public int calculateSimilarityScore(String sttText, String reference) {
         LevenshteinDistance ld = new LevenshteinDistance();
