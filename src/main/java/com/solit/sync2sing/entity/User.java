@@ -75,6 +75,7 @@ public class User extends BaseEntity {
     @Column(name = "refresh_token", length = 512)
     private String refreshToken;
 
+    @Builder.Default
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id", nullable = false))
     @Column(name = "role", nullable = false)
