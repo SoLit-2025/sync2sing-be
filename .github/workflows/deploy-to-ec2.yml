@@ -67,4 +67,5 @@ jobs:
             -e AWS_REGION=${{ secrets.AWS_REGION }} \
             -e S3_BUCKETNAME=${{ secrets.S3_BUCKETNAME }} \
             -e SPRING_PROFILES_ACTIVE=prod \
+            -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
             ${{ secrets.DOCKER_IMAGE_NAME }}

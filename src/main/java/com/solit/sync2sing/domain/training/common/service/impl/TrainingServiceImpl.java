@@ -1,12 +1,13 @@
 package com.solit.sync2sing.domain.training.common.service.impl;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.solit.sync2sing.domain.training.common.dto.*;
 import com.solit.sync2sing.domain.training.common.service.TrainingService;
 import com.solit.sync2sing.entity.*;
 import com.solit.sync2sing.global.ai.dto.AiVoiceAnalysisResponse;
 import com.solit.sync2sing.global.ai.service.AiService;
+import com.solit.sync2sing.global.chatgpt.dto.SoloPreResponse;
+import com.solit.sync2sing.global.chatgpt.sevice.ChatGPTService;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.security.CustomUserDetails;
 import com.solit.sync2sing.global.type.*;
@@ -16,13 +17,9 @@ import com.solit.sync2sing.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.text.similarity.LevenshteinDistance;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-import software.amazon.awssdk.services.transcribe.model.TranscriptionJob;
-import software.amazon.awssdk.services.transcribe.model.TranscriptionJobStatus;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -39,6 +36,7 @@ class TrainingServiceImpl implements TrainingService {
 
     private final transcriptionService transcriptionService;
     private final AiService aiService;
+    private final ChatGPTService chatGPTService;
 
     private final TrainingRepository trainingRepository;
     private final TrainingSessionRepository trainingSessionRepository;
@@ -221,9 +219,15 @@ class TrainingServiceImpl implements TrainingService {
             String transcriptText = transcriptFuture.get(60, TimeUnit.SECONDS);
             AiVoiceAnalysisResponse aiResult = aiFuture.get(60, TimeUnit.SECONDS);
 
+            List<String> typeList = new ArrayList<>();
+            List<String> ratioList = new ArrayList<>();
+
             for (int i = 0; i < aiResult.getData().getTop_voice_types().size(); i++) {
-                double ratio = aiResult.getData().getTop_voice_types().get(i).getRatio();
-                System.out.println(aiResult.getData().getTop_voice_types().get(i).getType() + " " + String.format("%.3f", ratio));
+                String type = aiResult.getData().getTop_voice_types().get(i).getType();
+                Double ratio = aiResult.getData().getTop_voice_types().get(i).getRatio();
+
+                typeList.add(type);
+                ratioList.add(String.format("%.3f", ratio));
             }
 
             String lyricText =
@@ -235,11 +239,44 @@ class TrainingServiceImpl implements TrainingService {
             // 호흡 평가
             int breathScore = 60;
 
-            // TODO: 6/4 이후 GPT api 연결 (발성 태그, 점수 기반)
-            String overallReviewTitle = "호흡이 큰 장점이지만, 음정과 박자에 안정이 필요해요";
-            String overallReviewContent = "전반적으로 음정과 박자 정확도가 우수하나, 발성과 호흡 조절에서 약간의 개선이 필요합니다.";
-            String causeContent = "코드 변화를 정확히 인지하지 못해 화성 진행에 따른 음의 변화를 자연스럽게 표현하기 어려워요.";
-            String proposalContent = "주요 코드(C, F, G)의 느낌을 익히고, 단순한 발성 연습부터 시작해 듣기 훈련을 병행하세요.";
+            String userPrompt = "사용자의 음정, 박자, 발음, 호흡 점수와 사용자의 발성 유형 예측 결과 가장 확률이 높은 상위 3개 태그와 그 확률을 알려줄게.\n" +
+                    "너는 총평 제목(overallReviewTitle), 총평 내용(overallReviewContent), 총평의 원인(causeContent), 추가적인 제안(proposalContent) 4가지를 알려줘.\n" +
+                    "\n" +
+                    "아래 네 가지 항목을 JSON 형식의 문자열로 답변해줘. 다른 말은 하지 말고 오직 JSON 형식의 문자열 응답만 줘.\n" +
+                    "{\n" +
+                    "  \"overallReviewTitle\": \"\",\n" +
+                    "  \"overallReviewContent\": \"\",\n" +
+                    "  \"causeContent\": \"\",\n" +
+                    "  \"proposalContent\": \"\"\n" +
+                    "}\n" +
+                    "음정 점수: " + request.getPitchAccuracy() + "\n" +
+                    "박자 점수: " + request.getBeatAccuracy() + "\n" +
+                    "발음 점수: " + pronunciationScore + "\n" +
+                    "호흡 점수: " + breathScore + "\n" +
+                    "발성 태그와 예측 확률: " + "\n" +
+                    typeList.get(0) + " " + ratioList.get(0) + "\n" +
+                    typeList.get(1) + " " + ratioList.get(1) + "\n" +
+                    typeList.get(2) + " " + ratioList.get(2) + "\n" +
+                    "다음은 너의 답변 예시를 알려줄게.\n" +
+                    "\n" +
+                    "{\n" +
+                    "  \"overallReviewTitle\": \"호흡이 큰 장점이지만, 음정과 박자에 안정이 필요해요\",\n" +
+                    "  \"overallReviewContent\": \"호흡 조절은 잘하고 계시지만, 음정과 박자가 불안정하여 노래의 화성 구조를 충분히 표현하지 못하고 있어요. 발성은 중간 정도로 괜찮지만, 정확한 음정과 리듬을 통해 전체적인 완성도를 높일 필요가 있습니다.\",\n" +
+                    "  \"causeContent\": \"코드 변화를 정확히 인지하지 못해 화성 진행에 따른 음의 변화를 자연스럽게 표현하기 어려워요.\",\n" +
+                    "  \"proposalContent\": \"주요 코드(C, F, G)의 느낌을 익히고, 단순한 발성 연습부터 시작해 듣기 훈련을 병행하세요.\"\n" +
+                    "}";
+
+            String gptResponse = chatGPTService.askToGpt(userPrompt);
+
+            gptResponse = gptResponse.replaceAll("```json|```", "").trim();
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            SoloPreResponse soloPreResponse = objectMapper.readValue(gptResponse, SoloPreResponse.class);
+
+            String overallReviewTitle = soloPreResponse.getOverallReviewTitle();
+            String overallReviewContent = soloPreResponse.getOverallReviewContent();
+            String causeContent = soloPreResponse.getCauseContent();
+            String proposalContent = soloPreResponse.getProposalContent();
 
             s3Util.deleteFileFromS3(recordingAudioS3Url);
 
