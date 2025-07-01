@@ -20,12 +20,19 @@ public enum ResponseCode {
     // 응답 코드 정의
     CURRENT_TRAINING_LIST_FETCHED(HttpStatus.OK, "현재 진행 중인 트레이닝 목록 조회에 성공했습니다."),
     CURRICULUM_CREATED(HttpStatus.CREATED, "커리큘럼 추천 생성에 성공했습니다."),
+    INVALID_CURRICULUM_DAYS(HttpStatus.BAD_REQUEST, "trainingDays는 3, 7, 14 중 하나여야 합니다."),
     TRAINING_PROGRESS_UPDATED(HttpStatus.OK, "트레이닝 진행 상황 업데이트에 성공했습니다."),
     VOCAL_ANALYSIS_REPORT_CREATED(HttpStatus.CREATED, "보컬 분석 리포트 생성에 성공했습니다."),
+    INVALID_TRAINING_MODE_OR_ANALYSIS_TYPE(HttpStatus.BAD_REQUEST, "트레이닝 모드 또는 분석 타입 요청 값이 유효하지 않습니다."),
+    EXTERNAL_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "외부 API 응답 시간 초과. 잠시 후 다시 시도해 주세요."),
+    TRANSCRIBE_PARSING_FAILED(HttpStatus.BAD_GATEWAY, "Transcribe 결과 파싱 실패. 다시 시도해 주세요."),
 
     SOLO_TRAINING_SESSION_FETCHED(HttpStatus.OK, "솔로 트레이닝 세션 정보 조회에 성공했습니다."),
     SOLO_TRAINING_SESSION_CREATED(HttpStatus.CREATED, "솔로 트레이닝 세션 생성에 성공했습니다."),
     SOLO_TRAINING_SESSION_DELETED(HttpStatus.OK, "솔로 트레이닝 종료 및 관련 데이터(사용자 보컬 오디오 파일 및 진행 중인 훈련 데이터)가 삭제되었습니다."),
+    TRAINING_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 트레이닝 세션을 찾을 수 없습니다."),
+    TRAINING_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 훈련을 찾을 수 없습니다."),
+    INVALID_TRAINING_ID(HttpStatus.BAD_REQUEST, "트레이닝 세션에 해당 훈련이 존재하지 않습니다."),
     SOLO_MR_SONG_LIST_FETCHED(HttpStatus.OK, "솔로 트레이닝 MR 곡 목록 조회에 성공했습니다."),
     SOLO_ORIGINAL_SONG_LIST_FETCHED(HttpStatus.OK, "솔로 트레이닝 원곡 목록 조회에 성공했습니다."),
     SOLO_MR_SONG_FETCHED(HttpStatus.OK, "솔로 트레이닝 MR 곡 조회에 성공했습니다."),
@@ -70,6 +77,7 @@ public enum ResponseCode {
 
     ADMIN_SOLOSONG_UPLOADED(HttpStatus.CREATED, "솔로곡 업로드에 성공했습니다."),
     ADMIN_SOLOSONG_DELETED(HttpStatus.OK, "솔로곡 삭제에 성공했습니다."),
+    SONG_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 곡을 찾을 수 없습니다."),
     EMPTY_FILE_EXCEPTION(HttpStatus.BAD_REQUEST, "파일이 비어 있습니다."),
     FILE_UPLOAD_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "파일을 처리하는 중 오류가 발생했습니다."),
     FILE_UPLOAD_FAIL_S3_ROLLBACK(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드 실패로 S3 롤백되었습니다."),

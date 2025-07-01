@@ -5,6 +5,7 @@ import io.jsonwebtoken.*;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Date;
 import java.util.List;
@@ -55,15 +56,30 @@ public class TokenProvider {
                     .parseClaimsJws(token);
             return true;
         } catch (SignatureException e) {
-            throw new JwtException(ResponseCode.INVALID_JWT_SIGNATURE.getMessage());
+            throw new ResponseStatusException(
+                    ResponseCode.INVALID_JWT_SIGNATURE.getStatus(),
+                    ResponseCode.INVALID_JWT_SIGNATURE.getMessage()
+            );
         } catch (MalformedJwtException e) {
-            throw new JwtException(ResponseCode.INVALID_JWT_TOKEN.getMessage());
+            throw new ResponseStatusException(
+                    ResponseCode.INVALID_JWT_TOKEN.getStatus(),
+                    ResponseCode.INVALID_JWT_TOKEN.getMessage()
+            );
         } catch (ExpiredJwtException e) {
-            throw new JwtException(ResponseCode.EXPIRED_JWT_TOKEN.getMessage());
+            throw new ResponseStatusException(
+                    ResponseCode.EXPIRED_JWT_TOKEN.getStatus(),
+                    ResponseCode.EXPIRED_JWT_TOKEN.getMessage()
+            );
         } catch (UnsupportedJwtException e) {
-            throw new JwtException(ResponseCode.UNSUPPORTED_JWT_TOKEN.getMessage());
+            throw new ResponseStatusException(
+                    ResponseCode.UNSUPPORTED_JWT_TOKEN.getStatus(),
+                    ResponseCode.UNSUPPORTED_JWT_TOKEN.getMessage()
+            );
         } catch (IllegalArgumentException e) {
-            throw new JwtException(ResponseCode.EMPTY_JWT_CLAIMS.getMessage());
+            throw new ResponseStatusException(
+                    ResponseCode.EMPTY_JWT_CLAIMS.getStatus(),
+                    ResponseCode.EMPTY_JWT_CLAIMS.getMessage()
+            );
         }
 
     }

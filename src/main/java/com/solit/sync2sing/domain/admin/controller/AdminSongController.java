@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/admin/song")
@@ -36,7 +37,10 @@ public class AdminSongController {
                             ResponseCode.ADMIN_SOLOSONG_UPLOADED
                     ));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ResponseStatusException(
+                    ResponseCode.FILE_UPLOAD_EXCEPTION.getStatus(),
+                    ResponseCode.FILE_UPLOAD_EXCEPTION.getMessage()
+            );
         }
     }
 
@@ -53,7 +57,10 @@ public class AdminSongController {
                             ResponseCode.ADMIN_SOLOSONG_DELETED
                     ));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ResponseStatusException(
+                    ResponseCode.SONG_NOT_FOUND.getStatus(),
+                    ResponseCode.SONG_NOT_FOUND.getMessage()
+            );
         }
     }
 

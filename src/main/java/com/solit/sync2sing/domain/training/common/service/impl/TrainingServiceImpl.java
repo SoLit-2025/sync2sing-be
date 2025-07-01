@@ -54,7 +54,10 @@ class TrainingServiceImpl implements TrainingService {
             case 3 -> 1;
             case 7 -> 2;
             case 14 -> 3;
-            default -> throw new IllegalArgumentException("trainingDays는 3, 7, 14 중 하나여야 합니다.");
+            default -> throw new ResponseStatusException(
+                    ResponseCode.INVALID_CURRICULUM_DAYS.getStatus(),
+                    ResponseCode.INVALID_CURRICULUM_DAYS.getMessage()
+            );
         };
 
         Long userId = userDetails.getId();
@@ -109,14 +112,23 @@ class TrainingServiceImpl implements TrainingService {
             Long sessionId,
             Long trainingId) {
         TrainingSession session = trainingSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new IllegalStateException("진행 중인 트레이닝 세션이 없습니다."));
+                .orElseThrow(() -> new ResponseStatusException(
+                        ResponseCode.TRAINING_SESSION_NOT_FOUND.getStatus(),
+                        ResponseCode.TRAINING_SESSION_NOT_FOUND.getMessage()
+                ));
 
         Training training = trainingRepository.findById(trainingId)
-                .orElseThrow(() -> new EntityNotFoundException("해당 훈련이 존재하지 않습니다."));
+                .orElseThrow(() -> new ResponseStatusException(
+                        ResponseCode.TRAINING_NOT_FOUND.getStatus(),
+                        ResponseCode.TRAINING_NOT_FOUND.getMessage()
+                ));
 
         TrainingSessionTraining sessionTraining = trainingSessionTrainingRepository
                 .findByTrainingSessionAndTraining(session, training)
-                .orElseThrow(() -> new IllegalStateException("이 세션에 해당 훈련이 포함되어 있지 않습니다."));
+                .orElseThrow(() -> new ResponseStatusException(
+                        ResponseCode.INVALID_TRAINING_ID.getStatus(),
+                        ResponseCode.INVALID_TRAINING_ID.getMessage()
+                ));
 
         sessionTraining.setProgress(request.getProgress());
 
@@ -197,7 +209,10 @@ class TrainingServiceImpl implements TrainingService {
         } else if (mode.equals("DUET") && type.equals("POST")) {
             return duetPostAnalysis(vocalFile, request, userDetails);
         } else {
-            throw new IllegalArgumentException("잘못된 분석 요청");
+            throw new ResponseStatusException(
+                    ResponseCode.INVALID_TRAINING_MODE_OR_ANALYSIS_TYPE.getStatus(),
+                    ResponseCode.INVALID_TRAINING_MODE_OR_ANALYSIS_TYPE.getMessage()
+            );
         }
     }
 

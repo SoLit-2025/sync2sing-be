@@ -82,7 +82,9 @@ public class AdminSongServiceImpl implements AdminSongService {
     @Override
     public void adminSoloSongDelete(AdminSoloSongDeleteRequest request) {
         Song song = songRepository.findById(request.getSongId())
-                .orElseThrow(() -> new IllegalArgumentException("해당 곡을 찾을 수 없습니다"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        ResponseCode.
+                ));
 
         s3Util.deleteFileFromS3(song.getOriginalAudioFile().getFileUrl());
         s3Util.deleteFileFromS3(song.getMrAudioFile().getFileUrl());

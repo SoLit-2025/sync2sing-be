@@ -2,12 +2,14 @@ package com.solit.sync2sing.global.transcription.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.util.S3Util;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.services.transcribe.TranscribeClient;
 import software.amazon.awssdk.services.transcribe.model.*;
 
@@ -37,7 +39,10 @@ public class transcriptionService {
             try {
                 Thread.sleep(5000);
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                throw new ResponseStatusException(
+                        ResponseCode.EXTERNAL_TIMEOUT.getStatus(),
+                        ResponseCode.EXTERNAL_TIMEOUT.getMessage()
+                );
             }
 
             job = getJob(jobName);
@@ -45,7 +50,10 @@ public class transcriptionService {
         } while (job.transcriptionJobStatus() != TranscriptionJobStatus.COMPLETED && attempts < 10);
 
         if (job.transcriptionJobStatus() != TranscriptionJobStatus.COMPLETED) {
-            throw new IllegalStateException("Transcription job did not complete in time");
+            throw new ResponseStatusException(
+                    ResponseCode.INTERNAL_ERROR.getStatus(),
+                    ResponseCode.INTERNAL_ERROR.getMessage()
+            );
         }
 
         String transcriptUrl = job.transcript().transcriptFileUri();
@@ -83,7 +91,10 @@ public class transcriptionService {
             JsonNode node = objectMapper.readTree(json);
             return node.path("results").path("transcripts").get(0).path("transcript").asText();
         } catch (Exception e) {
-            throw new RuntimeException("Transcribe 결과 파싱 실패", e);
+            throw new ResponseStatusException(
+                    ResponseCode.TRANSCRIBE_PARSING_FAILED.getStatus(),
+                    ResponseCode.TRANSCRIBE_PARSING_FAILED.getMessage()
+            );
         }
     }
 
