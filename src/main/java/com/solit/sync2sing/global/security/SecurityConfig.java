@@ -1,5 +1,6 @@
 package com.solit.sync2sing.global.security;
 
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -33,7 +34,13 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/user/signup", "/api/user/login").permitAll()
+                        .requestMatchers(
+                                "/api/user/signup",
+                                "/api/user/login",
+                                "/admin/song/solo",
+                                "/api/training/vocal-analysis"
+                                ).permitAll()
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/api/user/logout").hasRole("USER")  // 권한 설정
                         .anyRequest().authenticated()
                 )

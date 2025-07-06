@@ -11,8 +11,10 @@ import java.util.Map;
 @AllArgsConstructor
 public class CurrentTrainingListDTO {
 
+    @Builder.Default
     private Map<String, CurrentTrainingDTO> solo = new HashMap<>();
 
+    @Builder.Default
     private Map<String, CurrentTrainingDTO> duet = new HashMap<>();
 
     @Getter

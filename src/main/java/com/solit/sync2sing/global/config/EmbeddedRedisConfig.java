@@ -19,7 +19,7 @@ public class EmbeddedRedisConfig {
     private RedisServer redisServer;
 
     @PostConstruct
-    public void startRedis() throws IOException {
+    public void startRedis() {
         System.out.println("Starting Embedded Redis on port " + redisPort);
 
         // Windows 환경 특별 처리

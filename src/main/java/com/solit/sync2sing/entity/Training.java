@@ -1,5 +1,6 @@
 package com.solit.sync2sing.entity;
 
+import com.solit.sync2sing.global.entity.BaseEntity;
 import com.solit.sync2sing.global.type.TrainingCategory;
 import com.solit.sync2sing.global.type.TrainingGrade;
 import jakarta.persistence.*;
@@ -12,7 +13,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "training")
-public class Training {
+public class Training extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)

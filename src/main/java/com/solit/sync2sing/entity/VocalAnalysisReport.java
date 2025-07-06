@@ -1,23 +1,27 @@
 package com.solit.sync2sing.entity;
 
-import com.solit.sync2sing.global.type.SessionStatus;
+import com.solit.sync2sing.global.entity.BaseEntity;
+import com.solit.sync2sing.global.type.RecordingContext;
 import com.solit.sync2sing.global.type.TrainingMode;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
+@EntityListeners(AuditingEntityListener.class)
 @Getter
-@Setter
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @Entity
 @Table(name = "vocal_analysis_report")
-public class VocalAnalysisReport {
+public class VocalAnalysisReport extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -28,9 +32,13 @@ public class VocalAnalysisReport {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pre_training_report_id")
     private VocalAnalysisReport preTrainingReport;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "song_id")
+    private Song song;
 
     @Size(max = 255)
     @NotNull
@@ -45,7 +53,7 @@ public class VocalAnalysisReport {
     @Enumerated(EnumType.STRING)
     @NotNull
     @Column(name = "report_type", nullable = false, length = 10)
-    private SessionStatus reportType;
+    private RecordingContext reportType;
 
     @NotNull
     @Column(name = "pitch_score", nullable = false)
@@ -56,8 +64,8 @@ public class VocalAnalysisReport {
     private Integer beatScore;
 
     @NotNull
-    @Column(name = "vocalization_score", nullable = false)
-    private Integer vocalizationScore;
+    @Column(name = "pronunciation_score", nullable = false)
+    private Integer pronunciationScore;
 
     @NotNull
     @Column(name = "breath_score", nullable = false)
@@ -88,10 +96,5 @@ public class VocalAnalysisReport {
     @Size(max = 1000)
     @Column(name = "feedback_content", length = 1000)
     private String feedbackContent;
-
-    @NotNull
-    @CreatedDate
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
 
 }

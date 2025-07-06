@@ -18,7 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.JwtException;
-
+import org.springframework.web.server.ResponseStatusException;
 
 
 @Component
@@ -42,7 +42,10 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         try {
             if (jwt != null) {
                 if (Boolean.TRUE.equals(redisTemplate.hasKey(jwt))) {
-                    throw new JwtException(ResponseCode.BLACKLISTED_JWT_TOKEN.getMessage());
+                    throw new ResponseStatusException(
+                            ResponseCode.BLACKLISTED_JWT_TOKEN.getStatus(),
+                            ResponseCode.BLACKLISTED_JWT_TOKEN.getMessage()
+                    );
                 }
 
                 if (tokenProvider.validateToken(jwt)) {

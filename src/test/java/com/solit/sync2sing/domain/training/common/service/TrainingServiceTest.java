@@ -57,7 +57,8 @@ public class TrainingServiceTest {
         testUser.setGender(Gender.FEMALE);
         testUser.setAge(20);
         testUser.setVoiceType(VoiceType.SOPRANO);
-        testUser.setVoiceRange("C3~G5");
+        testUser.setPitchNoteMin("C3");
+        testUser.setPitchNoteMax("G5");
         testUser.setDuetPenaltyCount(0);
 
         return new CustomUserDetails(testUser);

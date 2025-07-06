@@ -1,5 +1,6 @@
 package com.solit.sync2sing.entity;
 
+import com.solit.sync2sing.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "duet_room_application")
-public class DuetRoomApplication {
+public class DuetRoomApplication extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -25,10 +26,5 @@ public class DuetRoomApplication {
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "applicant_user_id", nullable = false)
     private User applicantUser;
-
-    @NotNull
-    @CreatedDate
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
 
 }

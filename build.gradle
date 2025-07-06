@@ -43,7 +43,12 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	implementation 'it.ozimov:embedded-redis:0.7.3'
 	implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
-
+	implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
+	implementation platform("software.amazon.awssdk:bom:2.25.0")
+	implementation 'software.amazon.awssdk:s3'
+	implementation 'software.amazon.awssdk:transcribe'
+	implementation 'org.apache.commons:commons-text:1.10.0'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
 
 }

@@ -1,5 +1,6 @@
 package com.solit.sync2sing.entity;
 
+import com.solit.sync2sing.global.entity.BaseEntity;
 import com.solit.sync2sing.global.type.Gender;
 import com.solit.sync2sing.global.type.VoiceType;
 import jakarta.persistence.*;
@@ -19,7 +20,7 @@ import java.util.List;
 @Table(name = "user")
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class User extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -54,10 +55,13 @@ public class User {
     @Column(name = "voice_type", nullable = false, length = 50)
     private VoiceType voiceType;
 
-    @Size(max = 255)
     @NotNull
-    @Column(name = "voice_range", nullable = false)
-    private String voiceRange;
+    @Column(name = "pitch_note_min", nullable = false)
+    private String pitchNoteMin;
+
+    @NotNull
+    @Column(name = "pitch_note_max", nullable = false)
+    private String pitchNoteMax;
 
     @NotNull
     @ColumnDefault("0")
@@ -71,6 +75,7 @@ public class User {
     @Column(name = "refresh_token", length = 512)
     private String refreshToken;
 
+    @Builder.Default
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id", nullable = false))
     @Column(name = "role", nullable = false)
