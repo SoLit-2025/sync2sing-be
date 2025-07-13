@@ -83,7 +83,8 @@ public class AdminSongServiceImpl implements AdminSongService {
     public void adminSoloSongDelete(AdminSoloSongDeleteRequest request) {
         Song song = songRepository.findById(request.getSongId())
                 .orElseThrow(() -> new ResponseStatusException(
-                        ResponseCode.
+                        ResponseCode.SONG_NOT_FOUND.getStatus(),
+                        ResponseCode.SONG_NOT_FOUND.getMessage()
                 ));
 
         s3Util.deleteFileFromS3(song.getOriginalAudioFile().getFileUrl());
