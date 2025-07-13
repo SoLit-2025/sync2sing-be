@@ -1,14 +1,12 @@
 package com.solit.sync2sing.entity;
 
 import com.solit.sync2sing.global.entity.BaseEntity;
+import com.solit.sync2sing.global.type.RecordingContext;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.data.annotation.CreatedDate;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -38,9 +36,9 @@ public class Recording extends BaseEntity {
     @Column(name = "recording_format", nullable = false, length = 20)
     private String recordingFormat;
 
-    @Size(max = 20)
+    @Enumerated(EnumType.STRING)
     @NotNull
     @Column(name = "recording_phase", nullable = false, length = 20)
-    private String recordingPhase;
+    private RecordingContext recordingPhase;
 
 }

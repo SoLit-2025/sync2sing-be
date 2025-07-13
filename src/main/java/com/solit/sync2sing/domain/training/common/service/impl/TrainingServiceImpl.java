@@ -14,7 +14,6 @@ import com.solit.sync2sing.global.type.*;
 import com.solit.sync2sing.global.util.S3Util;
 import com.solit.sync2sing.global.transcription.service.transcriptionService;
 import com.solit.sync2sing.repository.*;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.stereotype.Service;
@@ -64,6 +63,8 @@ class TrainingServiceImpl implements TrainingService {
 
         Set<Long> trainedIds = userTrainingLogRepository.findTrainedTrainingIdsByUserId(userId);
 
+        // TODO: 커리큘럼 저장 로직 추가
+
         return CurriculumListResponse.builder()
                 .pitch(pickTrainings(TrainingCategory.PITCH, TrainingGrade.valueOf(request.getPitch()), trainingCountPerCategory, trainedIds))
                 .rhythm(pickTrainings(TrainingCategory.RHYTHM, TrainingGrade.valueOf(request.getRhythm()), trainingCountPerCategory, trainedIds))
@@ -72,6 +73,7 @@ class TrainingServiceImpl implements TrainingService {
                 .build();
     }
 
+    // TODO: 첫 번째 훈련 isCurrentTraining 속성 True, 나머지 훈련 False
     private List<TrainingDTO> pickTrainings(
             TrainingCategory category,
             TrainingGrade grade,
