@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SessionDTO {
+    private Long sessionId;
     private SessionStatus status;
     private LocalDateTime startDate;
     private LocalDateTime endDate;

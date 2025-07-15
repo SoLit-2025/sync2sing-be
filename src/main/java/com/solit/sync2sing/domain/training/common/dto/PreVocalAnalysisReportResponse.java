@@ -2,7 +2,6 @@ package com.solit.sync2sing.domain.training.common.dto;
 
 import com.solit.sync2sing.entity.VocalAnalysisReport;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
