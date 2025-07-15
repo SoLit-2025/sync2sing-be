@@ -221,10 +221,22 @@ public abstract class AbstractTrainingService {
                 .curriculum(null)
                 .build();
     }
-//
-//    void deleteSession(CustomUserDetails userDetails) {
-//
-//    }
+
+    void deleteSession(CustomUserDetails userDetails) {
+        // 1) 현재 사용자·모드에 해당하는 세션 조회
+        TrainingSession session = trainingSessionRepository.findByUser(userDetails.getUser()).stream()
+                .filter(s -> s.getTrainingMode() == trainingMode)
+                .findFirst()
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                ResponseCode.TRAINING_SESSION_NOT_FOUND.getStatus(),
+                                ResponseCode.TRAINING_SESSION_NOT_FOUND.getMessage()
+                        )
+                );
+
+        // 2) 세션 삭제 (cascade 규칙에 따라 연관된 녹음·훈련 데이터도 함께 삭제됨)
+        trainingSessionRepository.delete(session);
+    }
 //
 //    SongListDTO getSongList(String type) {
 //
