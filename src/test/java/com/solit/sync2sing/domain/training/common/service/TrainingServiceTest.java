@@ -49,17 +49,18 @@ public class TrainingServiceTest {
     public static CustomUserDetails createForTest() {
         final String USER_ROLE = "USER";
 
-        User testUser = new User();
-        testUser.setUsername("baduck@example.com");
-        testUser.setPassword("testPassword");
-        testUser.setRoles(Collections.singletonList(USER_ROLE));
-        testUser.setNickname("테스트사용자");
-        testUser.setGender(Gender.FEMALE);
-        testUser.setAge(20);
-        testUser.setVoiceType(VoiceType.SOPRANO);
-        testUser.setPitchNoteMin("C3");
-        testUser.setPitchNoteMax("G5");
-        testUser.setDuetPenaltyCount(0);
+        User testUser = User.builder()
+                .username("baduck@example.com")
+                .password("testPassword")
+                .roles(Collections.singletonList(USER_ROLE))
+                .nickname("테스트사용자")
+                .gender(Gender.FEMALE)
+                .age(20)
+                .voiceType(VoiceType.SOPRANO)
+                .pitchNoteMin("C3")
+                .pitchNoteMax("G5")
+                .duetPenaltyCount(0)
+                .build();
 
         return new CustomUserDetails(testUser);
     }
@@ -71,61 +72,69 @@ public class TrainingServiceTest {
         Long userId = 1L;
 
         // 샘플 Training 데이터 삽입
-        Training t1 = new Training();
-        t1.setCategory(TrainingCategory.PITCH);
-        t1.setTitle("음정 안정 훈련");
-        t1.setGrade(TrainingGrade.MEDIUM);
-        t1.setDescription("기초 음정 정확도를 높이기 위한 훈련입니다.");
-        t1.setTrainingMinutes(5);
+        Training t1 = Training.builder()
+                .category(TrainingCategory.PITCH)
+                .title("음정 안정 훈련")
+                .grade(TrainingGrade.MEDIUM)
+                .description("기초 음정 정확도를 높이기 위한 훈련입니다.")
+                .trainingMinutes(5)
+                .build();
 
-        Training t2 = new Training();
-        t2.setCategory(TrainingCategory.PITCH);
-        t2.setTitle("세밀한 음정 조절 연습");
-        t2.setGrade(TrainingGrade.MEDIUM);
-        t2.setDescription("반음 단위의 정확한 음정 조절 능력을 향상시킵니다.");
-        t2.setTrainingMinutes(5);
+        Training t2 = Training.builder()
+                .category(TrainingCategory.PITCH)
+                .title("세밀한 음정 조절 연습")
+                .grade(TrainingGrade.MEDIUM)
+                .description("반음 단위의 정확한 음정 조절 능력을 향상시킵니다.")
+                .trainingMinutes(5)
+                .build();
 
-        Training t3 = new Training();
-        t3.setCategory(TrainingCategory.RHYTHM);
-        t3.setTitle("리듬 감각 강화 훈련");
-        t3.setGrade(TrainingGrade.HIGH);
-        t3.setDescription("박자 감각을 높이는 훈련입니다.");
-        t3.setTrainingMinutes(5);
+        Training t3 = Training.builder()
+                .category(TrainingCategory.RHYTHM)
+                .title("리듬 감각 강화 훈련")
+                .grade(TrainingGrade.HIGH)
+                .description("박자 감각을 높이는 훈련입니다.")
+                .trainingMinutes(5)
+                .build();
 
-        Training t4 = new Training();
-        t4.setCategory(TrainingCategory.RHYTHM);
-        t4.setTitle("박자 일관성 연습");
-        t4.setGrade(TrainingGrade.HIGH);
-        t4.setDescription("일관된 템포 유지 훈련입니다.");
-        t4.setTrainingMinutes(5);
+        Training t4 = Training.builder()
+                .category(TrainingCategory.RHYTHM)
+                .title("박자 일관성 연습")
+                .grade(TrainingGrade.HIGH)
+                .description("일관된 템포 유지 훈련입니다.")
+                .trainingMinutes(5)
+                .build();
 
-        Training t5 = new Training();
-        t5.setCategory(TrainingCategory.VOCALIZATION);
-        t5.setTitle("발성 기본 자세 익히기");
-        t5.setGrade(TrainingGrade.LOW);
-        t5.setDescription("기초 자세 훈련입니다.");
-        t5.setTrainingMinutes(5);
+        Training t5 = Training.builder()
+                .category(TrainingCategory.VOCALIZATION)
+                .title("발성 기본 자세 익히기")
+                .grade(TrainingGrade.LOW)
+                .description("기초 자세 훈련입니다.")
+                .trainingMinutes(5)
+                .build();
 
-        Training t6 = new Training();
-        t6.setCategory(TrainingCategory.VOCALIZATION);
-        t6.setTitle("강약 조절 발성 연습");
-        t6.setGrade(TrainingGrade.LOW);
-        t6.setDescription("발성 표현력 향상 훈련입니다.");
-        t6.setTrainingMinutes(5);
+        Training t6 = Training.builder()
+                .category(TrainingCategory.VOCALIZATION)
+                .title("강약 조절 발성 연습")
+                .grade(TrainingGrade.LOW)
+                .description("발성 표현력 향상 훈련입니다.")
+                .trainingMinutes(5)
+                .build();
 
-        Training t7 = new Training();
-        t7.setCategory(TrainingCategory.BREATH);
-        t7.setTitle("효율적 호흡 관리 훈련");
-        t7.setGrade(TrainingGrade.MEDIUM);
-        t7.setDescription("호흡 조절 능력 강화 훈련입니다.");
-        t7.setTrainingMinutes(5);
+        Training t7 = Training.builder()
+                .category(TrainingCategory.BREATH)
+                .title("효율적 호흡 관리 훈련")
+                .grade(TrainingGrade.MEDIUM)
+                .description("호흡 조절 능력 강화 훈련입니다.")
+                .trainingMinutes(5)
+                .build();
 
-        Training t8 = new Training();
-        t8.setCategory(TrainingCategory.BREATH);
-        t8.setTitle("호흡 지속력 강화 연습");
-        t8.setGrade(TrainingGrade.MEDIUM);
-        t8.setDescription("호흡 유지력 강화 훈련입니다.");
-        t8.setTrainingMinutes(5);
+        Training t8 = Training.builder()
+                .category(TrainingCategory.BREATH)
+                .title("호흡 지속력 강화 연습")
+                .grade(TrainingGrade.MEDIUM)
+                .description("호흡 유지력 강화 훈련입니다.")
+                .trainingMinutes(5)
+                .build();
 
         trainingRepository.saveAll(List.of(t1, t2, t3, t4, t5, t6, t7, t8));
 
