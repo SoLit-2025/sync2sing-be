@@ -4,6 +4,7 @@ import com.solit.sync2sing.domain.training.base.dto.SessionDTO;
 import com.solit.sync2sing.domain.training.base.dto.SongListDTO;
 import com.solit.sync2sing.domain.training.common.dto.CurriculumListResponse;
 import com.solit.sync2sing.entity.*;
+import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.security.CustomUserDetails;
 import com.solit.sync2sing.global.type.RecordingContext;
 import com.solit.sync2sing.global.type.SessionStatus;
@@ -332,5 +333,170 @@ public class AbstractTrainingServiceTest {
         assertEquals(2, dto2.getDuetParts().size());
         assertEquals(List.of(0), dto2.getDuetParts().get(0).getLyricsIndexes());
         assertEquals(List.of(1), dto2.getDuetParts().get(1).getLyricsIndexes());
+    }
+
+    @Test
+    void testGetSong_InvalidType() {
+        ResponseStatusException ex = assertThrows(
+                ResponseStatusException.class,
+                () -> soloService.getSong(1L, "invalid")
+        );
+        assertEquals(
+                ResponseCode.INVALID_TRAINING_MODE_OR_ANALYSIS_TYPE.getMessage(),
+                ex.getReason()
+        );
+    }
+
+    @Test
+    void testGetSong_SoloOriginal() {
+        // given
+        Song song = mock(Song.class);
+        when(songRepository.findById(1L)).thenReturn(java.util.Optional.of(song));
+        when(song.getId()).thenReturn(1L);
+        when(song.getTitle()).thenReturn("Shape of You");
+        when(song.getArtist()).thenReturn("Ed Sheeran");
+        when(song.getVoiceType()).thenReturn(com.solit.sync2sing.global.type.VoiceType.TENOR);
+        when(song.getPitchNoteMin()).thenReturn("E1");
+        when(song.getPitchNoteMax()).thenReturn("F4");
+
+        AudioFile orig = mock(AudioFile.class);
+        when(orig.getFileUrl()).thenReturn("orig-url");
+        when(song.getOriginalAudioFile()).thenReturn(orig);
+
+        ImageFile album = mock(ImageFile.class);
+        when(album.getFileUrl()).thenReturn("album-solo");
+        when(song.getOriginalAudioFile()).thenReturn(orig);
+        when(song.getAlbumCoverFile()).thenReturn(album);
+
+        Lyricsline l1 = mock(Lyricsline.class);
+        when(l1.getLineIndex()).thenReturn(0);
+        when(l1.getText()).thenReturn("L0");
+        when(l1.getStartTimeMs()).thenReturn(0);
+        when(lyricslineRepository.findBySongOrderByLineIndex(song))
+                .thenReturn(List.of(l1));
+
+        // when
+        SongListDTO.SongDTO dto = soloService.getSong(1L, "original");
+
+        // then
+        assertEquals(1L, dto.getId());
+        assertEquals("Shape of You", dto.getTitle());
+        assertEquals("Ed Sheeran", dto.getArtist());
+        assertEquals("TENOR", dto.getVoiceType());
+        assertEquals("E1", dto.getPitchNoteMin());
+        assertEquals("F4", dto.getPitchNoteMax());
+        assertEquals(List.of(0), dto.getLyrics().stream().map(l -> l.getLineIndex()).toList());
+        assertEquals("orig-url", dto.getFileUrl());
+        assertEquals("album-solo", dto.getAlbumArtUrl());
+        assertNull(dto.getDuetParts());
+    }
+
+    @Test
+    void testGetSong_SoloMr() {
+        // setup as solo original but change type
+        Song song = mock(Song.class);
+        when(songRepository.findById(2L)).thenReturn(java.util.Optional.of(song));
+        when(song.getId()).thenReturn(2L);
+        when(song.getTitle()).thenReturn("Test");
+        when(song.getArtist()).thenReturn("Artist");
+        when(song.getVoiceType()).thenReturn(com.solit.sync2sing.global.type.VoiceType.ALTO);
+        when(song.getPitchNoteMin()).thenReturn("A2");
+        when(song.getPitchNoteMax()).thenReturn("C5");
+
+        AudioFile mr = mock(AudioFile.class);
+        when(mr.getFileUrl()).thenReturn("mr-url");
+        when(song.getMrAudioFile()).thenReturn(mr);
+
+        ImageFile album = mock(ImageFile.class);
+        when(album.getFileUrl()).thenReturn("album-solo");
+        when(song.getMrAudioFile()).thenReturn(mr);
+        when(song.getAlbumCoverFile()).thenReturn(album);
+
+        Lyricsline l = mock(Lyricsline.class);
+        when(l.getLineIndex()).thenReturn(1);
+        when(l.getText()).thenReturn("L1");
+        when(l.getStartTimeMs()).thenReturn(1000);
+        when(lyricslineRepository.findBySongOrderByLineIndex(song))
+                .thenReturn(List.of(l));
+
+        SongListDTO.SongDTO dto = soloService.getSong(2L, "mr");
+        assertEquals("mr-url", dto.getFileUrl());
+        assertEquals(List.of(1),
+                dto.getLyrics().stream()
+                        .map(SongListDTO.LyricLineDTO::getLineIndex)
+                        .toList()
+        );
+    }
+
+    @Test
+    void testGetSong_DuetOriginal() {
+        // given
+        Song song = mock(Song.class);
+        when(songRepository.findById(3L)).thenReturn(java.util.Optional.of(song));
+        when(song.getId()).thenReturn(3L);
+        when(song.getTitle()).thenReturn("Duet");
+        when(song.getArtist()).thenReturn("Singer");
+        when(song.getVoiceType()).thenReturn(com.solit.sync2sing.global.type.VoiceType.SOPRANO);
+        when(song.getPitchNoteMin()).thenReturn("B2");
+        when(song.getPitchNoteMax()).thenReturn("D5");
+
+        AudioFile orig2 = mock(AudioFile.class);
+        when(orig2.getFileUrl()).thenReturn("orig2-url");
+        ImageFile album = mock(ImageFile.class);
+        when(album.getFileUrl()).thenReturn("album-url");
+        when(song.getOriginalAudioFile()).thenReturn(orig2);
+        when(song.getAlbumCoverFile()).thenReturn(album);
+
+        Lyricsline lx = mock(Lyricsline.class);
+        when(lx.getLineIndex()).thenReturn(2);
+        when(lx.getText()).thenReturn("LX");
+        when(lx.getStartTimeMs()).thenReturn(2000);
+        when(lyricslineRepository.findBySongOrderByLineIndex(song))
+                .thenReturn(List.of(lx));
+
+        DuetSongPart p1 = mock(DuetSongPart.class);
+        when(p1.getPartNumber()).thenReturn(1);
+        when(p1.getPartName()).thenReturn("A");
+        DuetSongPart p2 = mock(DuetSongPart.class);
+        when(p2.getPartNumber()).thenReturn(2);
+        when(p2.getPartName()).thenReturn("B");
+        when(duetSongPartRepository.findBySong(song))
+                .thenReturn(List.of(p1, p2));
+        when(lyricslineRepository.findByDuetSongPart(p1))
+                .thenReturn(List.of(lx));
+        when(lyricslineRepository.findByDuetSongPart(p2))
+                .thenReturn(List.of());
+
+        // when
+        SongListDTO.SongDTO dto = duetService.getSong(3L, "original");
+
+        // then
+        assertEquals(3L, dto.getId());
+        assertEquals("orig2-url", dto.getFileUrl());
+        assertEquals("album-url", dto.getAlbumArtUrl());
+        assertNotNull(dto.getDuetParts());
+        assertEquals(1, dto.getDuetParts().get(0).getLyricsIndexes().size());
+    }
+
+    @Test
+    void testGetSong_DuetMr() {
+        // similar to original but type=mr
+        Song song = mock(Song.class);
+        when(songRepository.findById(4L)).thenReturn(java.util.Optional.of(song));
+        AudioFile mr2 = mock(AudioFile.class);
+        when(mr2.getFileUrl()).thenReturn("mr2-url");
+        when(song.getMrAudioFile()).thenReturn(mr2);
+        ImageFile alb2 = mock(ImageFile.class);
+        when(alb2.getFileUrl()).thenReturn("alb2-url");
+        when(song.getAlbumCoverFile()).thenReturn(alb2);
+        when(lyricslineRepository.findBySongOrderByLineIndex(song))
+                .thenReturn(List.of());
+        when(duetSongPartRepository.findBySong(song)).thenReturn(List.of());
+        when(song.getVoiceType()).thenReturn(com.solit.sync2sing.global.type.VoiceType.SOPRANO);
+
+
+        SongListDTO.SongDTO dto = duetService.getSong(4L, "mr");
+        assertEquals("mr2-url", dto.getFileUrl());
+        assertEquals("alb2-url", dto.getAlbumArtUrl());
     }
 }
