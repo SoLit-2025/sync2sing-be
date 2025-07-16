@@ -5,13 +5,10 @@ import com.solit.sync2sing.entity.User;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.repository.UserRepository;
 import com.solit.sync2sing.domain.user.service.UserInfoService;
-import com.solit.sync2sing.global.type.Gender;
-import com.solit.sync2sing.global.type.VoiceType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
