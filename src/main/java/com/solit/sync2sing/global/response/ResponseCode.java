@@ -74,6 +74,8 @@ public enum ResponseCode {
     LOGOUT_SUCCESS(HttpStatus.OK, "로그아웃에 성공했습니다."),
     INVALID_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "유효하지 않은 Refresh Token입니다."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."),
+    USER_INFO_UPDATE_SUCCESS(HttpStatus.OK, "회원 정보 수정 성공"),
+    INVALID_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청 형식입니다."),
 
     ADMIN_SOLOSONG_UPLOADED(HttpStatus.CREATED, "솔로곡 업로드에 성공했습니다."),
     ADMIN_SOLOSONG_DELETED(HttpStatus.OK, "솔로곡 삭제에 성공했습니다."),
