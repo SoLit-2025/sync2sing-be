@@ -222,7 +222,13 @@ class TrainingServiceImpl implements TrainingService {
             MultipartFile vocalFile,
             GenerateVocalAnalysisReportRequest request
     ) {
-        Song guestSong = songRepository.findByTitle("Do-Re-Mi");
+        Song guestSong = songRepository.findByTitle("Do-Re-Mi")
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                ResponseCode.SONG_NOT_FOUND.getStatus(),
+                                ResponseCode.SONG_NOT_FOUND.getMessage()
+                        )
+                );
 
         String recordingAudioS3Url = null;
 
