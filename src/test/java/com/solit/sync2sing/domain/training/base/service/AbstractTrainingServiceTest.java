@@ -8,15 +8,14 @@ import com.solit.sync2sing.global.security.CustomUserDetails;
 import com.solit.sync2sing.global.type.RecordingContext;
 import com.solit.sync2sing.global.type.SessionStatus;
 import com.solit.sync2sing.global.type.TrainingMode;
-import com.solit.sync2sing.repository.DuetTrainingRoomRepository;
-import com.solit.sync2sing.repository.RecordingRepository;
-import com.solit.sync2sing.repository.TrainingSessionRepository;
-import com.solit.sync2sing.repository.TrainingSessionTrainingRepository;
+import com.solit.sync2sing.global.type.VoiceType;
+import com.solit.sync2sing.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -38,6 +37,12 @@ public class AbstractTrainingServiceTest {
     RecordingRepository recordingRepository;
     @Mock
     DuetTrainingRoomRepository duetTrainingRoomRepository;
+    @Mock
+    SongRepository songRepository;
+    @Mock
+    LyricslineRepository lyricslineRepository;
+    @Mock
+    DuetSongPartRepository duetSongPartRepository;
 
     // 두 모드를 각각 테스트하기 위해 익명 서브클래스 생성
     private AbstractTrainingService soloService;
@@ -50,14 +55,20 @@ public class AbstractTrainingServiceTest {
                 trainingSessionRepository,
                 trainingSessionTrainingRepository,
                 recordingRepository,
-                duetTrainingRoomRepository
+                duetTrainingRoomRepository,
+                songRepository,
+                lyricslineRepository,
+                duetSongPartRepository
         ) {};
         duetService = new AbstractTrainingService(
                 TrainingMode.DUET,
                 trainingSessionRepository,
                 trainingSessionTrainingRepository,
                 recordingRepository,
-                duetTrainingRoomRepository
+                duetTrainingRoomRepository,
+                songRepository,
+                lyricslineRepository,
+                duetSongPartRepository
         ) {};
     }
 
@@ -203,5 +214,123 @@ public class AbstractTrainingServiceTest {
         assertEquals("영희", dto.getSong().getUserPartName());
         assertEquals(LocalDateTime.of(2025,3,30,12,0), dto.getPreRecordingDueDate());
         assertEquals(LocalDateTime.of(2025,4,10,18,30), dto.getPostRecordingDueDate());
+    }
+
+    @Test
+    void testGetSongList_InvalidType() {
+        assertThrows(ResponseStatusException.class, () -> soloService.getSongList("foo"),
+                "잘못된 type 값이면 예외 발생해야 함");
+    }
+
+    @Test
+    void testGetSongList_SoloMode() {
+        // given
+        Song song = mock(Song.class);
+        when(song.getId()).thenReturn(1L);
+        when(song.getTitle()).thenReturn("Shape of You");
+        when(song.getArtist()).thenReturn("Ed Sheeran");
+        when(song.getVoiceType()).thenReturn(VoiceType.TENOR);
+        when(song.getPitchNoteMin()).thenReturn("E1");
+        when(song.getPitchNoteMax()).thenReturn("F4");
+
+        AudioFile original = mock(AudioFile.class);
+        when(original.getFileUrl()).thenReturn("orig-url");
+        ImageFile album = mock(ImageFile.class);
+        when(album.getFileUrl()).thenReturn("album-url");
+        when(song.getOriginalAudioFile()).thenReturn(original);
+        when(song.getAlbumCoverFile()).thenReturn(album);
+
+        Lyricsline line1 = mock(Lyricsline.class);
+        when(line1.getLineIndex()).thenReturn(0);
+        when(line1.getText()).thenReturn("L0");
+        when(line1.getStartTimeMs()).thenReturn(0);
+        Lyricsline line2 = mock(Lyricsline.class);
+        when(line2.getLineIndex()).thenReturn(1);
+        when(line2.getText()).thenReturn("L1");
+        when(line2.getStartTimeMs()).thenReturn(5000);
+        when(lyricslineRepository.findBySongOrderByLineIndex(song))
+                .thenReturn(List.of(line1, line2));
+
+        when(songRepository.findByTrainingMode(TrainingMode.SOLO))
+                .thenReturn(List.of(song));
+
+        // when
+        SongListDTO dto = soloService.getSongList("original");
+
+        // then
+        assertNotNull(dto);
+        assertEquals(1, dto.getSongList().size());
+        SongListDTO.SongDTO dto1 = dto.getSongList().get(0);
+        assertEquals(1L, dto1.getId());
+        assertEquals("Shape of You", dto1.getTitle());
+        assertEquals("Ed Sheeran", dto1.getArtist());
+        assertEquals("TENOR", dto1.getVoiceType());
+        assertEquals("E1", dto1.getPitchNoteMin());
+        assertEquals("F4", dto1.getPitchNoteMax());
+        assertEquals("orig-url", dto1.getFileUrl());
+        assertEquals("album-url", dto1.getAlbumArtUrl());
+        assertNotNull(dto1.getLyrics());
+        assertEquals(2, dto1.getLyrics().size());
+        assertNull(dto1.getDuetParts(), "SOLO 모드엔 duetParts 없어야 함");
+    }
+
+    @Test
+    void testGetSongList_DuetMode() {
+        // given
+        Song song = mock(Song.class);
+        when(song.getId()).thenReturn(2L);
+        when(song.getTitle()).thenReturn("Duet Song");
+        when(song.getArtist()).thenReturn("Artist");
+        when(song.getVoiceType()).thenReturn(VoiceType.ALTO);
+        when(song.getPitchNoteMin()).thenReturn("D3");
+        when(song.getPitchNoteMax()).thenReturn("E5");
+
+        AudioFile original = mock(AudioFile.class);
+        when(original.getFileUrl()).thenReturn("orig-duet");
+        ImageFile album = mock(ImageFile.class);
+        when(album.getFileUrl()).thenReturn("album-duet");
+        when(song.getOriginalAudioFile()).thenReturn(original);
+        when(song.getAlbumCoverFile()).thenReturn(album);
+
+        Lyricsline lineA = mock(Lyricsline.class);
+        when(lineA.getLineIndex()).thenReturn(0);
+        when(lineA.getText()).thenReturn("LA");
+        when(lineA.getStartTimeMs()).thenReturn(0);
+        Lyricsline lineB = mock(Lyricsline.class);
+        when(lineB.getLineIndex()).thenReturn(1);
+        when(lineB.getText()).thenReturn("LB");
+        when(lineB.getStartTimeMs()).thenReturn(4000);
+        when(lyricslineRepository.findBySongOrderByLineIndex(song))
+                .thenReturn(List.of(lineA, lineB));
+
+        DuetSongPart part1 = mock(DuetSongPart.class);
+        when(part1.getPartNumber()).thenReturn(1);
+        when(part1.getPartName()).thenReturn("A");
+        DuetSongPart part2 = mock(DuetSongPart.class);
+        when(part2.getPartNumber()).thenReturn(2);
+        when(part2.getPartName()).thenReturn("B");
+        when(duetSongPartRepository.findBySong(song))
+                .thenReturn(List.of(part1, part2));
+        when(lyricslineRepository.findByDuetSongPart(part1))
+                .thenReturn(List.of(lineA));
+        when(lyricslineRepository.findByDuetSongPart(part2))
+                .thenReturn(List.of(lineB));
+
+        when(songRepository.findByTrainingMode(TrainingMode.DUET))
+                .thenReturn(List.of(song));
+
+        // when
+        SongListDTO dto = duetService.getSongList("original");
+
+        // then
+        assertNotNull(dto);
+        assertEquals(1, dto.getSongList().size());
+        SongListDTO.SongDTO dto2 = dto.getSongList().get(0);
+        assertEquals(2L, dto2.getId());
+        assertEquals(2, dto2.getLyrics().size());
+        assertNotNull(dto2.getDuetParts(), "DUET 모드엔 duetParts 있어야 함");
+        assertEquals(2, dto2.getDuetParts().size());
+        assertEquals(List.of(0), dto2.getDuetParts().get(0).getLyricsIndexes());
+        assertEquals(List.of(1), dto2.getDuetParts().get(1).getLyricsIndexes());
     }
 }
