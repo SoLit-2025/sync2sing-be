@@ -55,6 +55,11 @@ public class User extends BaseEntity {
     @Column(name = "voice_type", nullable = false, length = 50)
     private VoiceType voiceType;
 
+    @Size(max = 255)
+    @NotNull
+    @Column(name = "voice_range", nullable = false)
+    private String voiceRange;
+
     @NotNull
     @Column(name = "pitch_note_min", nullable = false)
     private String pitchNoteMin;
