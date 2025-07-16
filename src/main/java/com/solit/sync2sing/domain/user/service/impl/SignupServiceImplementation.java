@@ -42,6 +42,7 @@ public class SignupServiceImplementation implements UserSignupService {
                 .age(26)
                 .pitchNoteMin("C3")
                 .pitchNoteMax("G5")
+                .voiceRange("C3 ~ G5")
                 .voiceType(VoiceType.SOPRANO)
                 .duetPenaltyCount(0)
                 .duetPenaltyUntil(null)
@@ -65,6 +66,7 @@ public class SignupServiceImplementation implements UserSignupService {
                 .pitchNoteMin(userEntity.getPitchNoteMin())
                 .pitchNoteMax(userEntity.getPitchNoteMax())
                 .voiceType(userEntity.getVoiceType())
+                .voiceRange(userEntity.getPitchNoteMin() + " ~ " + userEntity.getPitchNoteMax())
                 .duetPenaltyUntil(null)
                 .build();
     }
