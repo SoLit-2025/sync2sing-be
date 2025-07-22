@@ -1,6 +1,5 @@
 package com.solit.sync2sing.domain.training.common.dto;
 
-import com.solit.sync2sing.global.type.TrainingGrade;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;

@@ -5,15 +5,16 @@ import com.solit.sync2sing.global.type.SessionStatus;
 import com.solit.sync2sing.global.type.TrainingMode;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
 @Getter
-@Setter
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @Entity
 @Table(name = "training_session")
 public class TrainingSession extends BaseEntity {

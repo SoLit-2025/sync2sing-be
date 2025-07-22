@@ -2,7 +2,6 @@ package com.solit.sync2sing.domain.user.dto.response;
 
 import com.solit.sync2sing.global.type.Gender;
 import com.solit.sync2sing.global.type.VoiceType;
-import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
 import java.time.LocalDateTime;
