@@ -14,8 +14,9 @@ public class UserInfoResponseDTO {
     private String nickname;
     private Gender gender;
     private int age;
-    private String voiceRange;
     private VoiceType voiceType;
+    private String pitchNoteMin;
+    private String pitchNoteMax;
     private int duetPenaltyCount;
     private LocalDateTime duetPenaltyUntil;
     private int totalTrainingCount;
