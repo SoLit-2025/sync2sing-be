@@ -17,7 +17,6 @@ public class SignupResponseDTO {
     private String pitchNoteMin;
     private String pitchNoteMax;
     private VoiceType voiceType;
-    private String voiceRange;
     private int duetPenaltyCount;
     private LocalDateTime duetPenaltyUntil;
 }
