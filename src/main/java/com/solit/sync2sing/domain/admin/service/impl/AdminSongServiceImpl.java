@@ -12,7 +12,6 @@ import com.solit.sync2sing.global.type.VoiceType;
 import com.solit.sync2sing.global.util.S3Util;
 import com.solit.sync2sing.repository.SongRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;

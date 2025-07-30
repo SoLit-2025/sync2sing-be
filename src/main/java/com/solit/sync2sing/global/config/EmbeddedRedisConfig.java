@@ -7,8 +7,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import redis.embedded.RedisServer;
 
-import java.io.IOException;
-
 @Profile({"dev","local"})  // local 프로필에서만 활성화
 @Configuration
 public class EmbeddedRedisConfig {
