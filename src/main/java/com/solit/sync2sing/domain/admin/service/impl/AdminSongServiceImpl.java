@@ -5,16 +5,21 @@ import com.solit.sync2sing.domain.admin.dto.AdminSoloSongUploadRequest;
 import com.solit.sync2sing.domain.admin.service.AdminSongService;
 import com.solit.sync2sing.entity.AudioFile;
 import com.solit.sync2sing.entity.ImageFile;
+import com.solit.sync2sing.entity.Lyricsline;
 import com.solit.sync2sing.entity.Song;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.type.TrainingMode;
 import com.solit.sync2sing.global.type.VoiceType;
 import com.solit.sync2sing.global.util.S3Util;
+import com.solit.sync2sing.repository.LyricslineRepository;
 import com.solit.sync2sing.repository.SongRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +27,7 @@ public class AdminSongServiceImpl implements AdminSongService {
 
     private final S3Util s3Util;
     private final SongRepository songRepository;
+    private final LyricslineRepository lyricslineRepository;
 
     @Override
     public void adminSoloSongUpload(
@@ -64,6 +70,16 @@ public class AdminSongServiceImpl implements AdminSongService {
                     .pitchNoteMin(request.getPitchNoteMin())
                     .pitchNoteMax(request.getPitchNoteMax())
                     .build();
+
+            List<Lyricsline> lines = request.getLyrics().stream()
+                    .map(dto -> Lyricsline.builder()
+                            .song(song)
+                            .lineIndex(dto.getLineIndex())
+                            .text(dto.getText())
+                            .startTimeMs(dto.getStartTime())
+                            .build())
+                    .collect(Collectors.toList());
+            lyricslineRepository.saveAll(lines);
 
             songRepository.save(song);
         } catch (Exception e) {
