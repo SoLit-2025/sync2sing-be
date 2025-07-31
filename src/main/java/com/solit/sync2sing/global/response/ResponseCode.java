@@ -78,7 +78,6 @@ public enum ResponseCode {
     USER_INFO_UPDATE_SUCCESS(HttpStatus.OK, "회원 정보 수정 성공"),
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청 형식입니다."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증되지 않은 요청입니다. 다시 로그인하세요."),
-
     USER_INFO_SUCCESS(HttpStatus.OK, "회원 정보 조회 성공"),
 
     ADMIN_SOLOSONG_UPLOADED(HttpStatus.CREATED, "솔로곡 업로드에 성공했습니다."),
