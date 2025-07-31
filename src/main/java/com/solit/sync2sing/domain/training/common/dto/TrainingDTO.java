@@ -1,15 +1,11 @@
 package com.solit.sync2sing.domain.training.common.dto;
 
 import com.solit.sync2sing.entity.Training;
-import com.solit.sync2sing.global.type.TrainingCategory;
-import com.solit.sync2sing.global.type.TrainingGrade;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Getter
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public class TrainingDTO {
