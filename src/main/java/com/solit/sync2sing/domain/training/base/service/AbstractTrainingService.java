@@ -82,14 +82,8 @@ public abstract class AbstractTrainingService {
         SongListDTO.SongDTO songDTO = songB.build();
 
         // 4) PRE / POST 녹음 URL 조회
-        Recording preRec = recordingRepository
-                .findByTrainingSessionAndRecordingPhase(mySession, RecordingContext.PRE)
-                .orElseThrow(() ->
-                        new ResponseStatusException(
-                                ResponseCode.RECORDING_NOT_FOUND.getStatus(),
-                                ResponseCode.RECORDING_NOT_FOUND.getMessage()
-                        )
-                );
+        Optional<Recording> preRec = recordingRepository
+                .findByTrainingSessionAndRecordingPhase(mySession, RecordingContext.PRE);
         Optional<Recording> postRecOpt = recordingRepository
                 .findByTrainingSessionAndRecordingPhase(mySession, RecordingContext.POST);
 
@@ -145,7 +139,10 @@ public abstract class AbstractTrainingService {
                 .trainingDays(mySession.getCurriculumDays())
                 .keyAdjustment(mySession.getKeyAdjustment())
                 .song(songDTO)
-                .preRecordingFileUrl(preRec.getAudioFile().getFileUrl())
+                .preRecordingFileUrl(preRec
+                        .map(r -> r.getAudioFile().getFileUrl())
+                        .orElse(null)
+                )
                 .postRecordingFileUrl(
                         postRecOpt
                                 .map(r -> r.getAudioFile().getFileUrl())

@@ -115,7 +115,7 @@ public class AbstractTrainingServiceTest {
                 .thenReturn(List.of(session));
 
         // --- 실행 (when) ---
-        SessionDTO dto = soloService.getSession(userDetails);
+        SessionDTO dto = soloService.getSession(userDetails).get();
 
         // --- 검증 (then) ---
         assertEquals(SessionStatus.TRAINING_IN_PROGRESS, dto.getStatus());
@@ -202,7 +202,7 @@ public class AbstractTrainingServiceTest {
                 .thenReturn(List.of(session));
 
         // --- 실행 (when) ---
-        SessionDTO dto = duetService.getSession(userDetails);
+        SessionDTO dto = duetService.getSession(userDetails).get();
 
         // --- 검증 (then) ---
         // 공통 검증
