@@ -12,6 +12,7 @@ import com.solit.sync2sing.global.type.TrainingCategory;
 import com.solit.sync2sing.global.type.TrainingMode;
 import com.solit.sync2sing.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -161,6 +162,7 @@ public abstract class AbstractTrainingService {
 
     }
 
+    @Transactional
     public SessionDTO createSession(CustomUserDetails userDetails, CreateSessionRequest request) {
         // trainingDays 유효성 검사 (3, 7, 14만 허용)
         int days = request.getTrainingDays();
@@ -219,6 +221,7 @@ public abstract class AbstractTrainingService {
                 .build();
     }
 
+    @Transactional
     public void deleteSession(CustomUserDetails userDetails) {
         // 1) 현재 사용자·모드에 해당하는 세션 조회
         TrainingSession session = trainingSessionRepository.findByUser(userDetails.getUser()).stream()
