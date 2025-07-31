@@ -9,12 +9,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
-
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

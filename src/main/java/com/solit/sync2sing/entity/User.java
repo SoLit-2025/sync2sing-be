@@ -15,11 +15,11 @@ import java.util.List;
 
 @Getter
 @Setter
-@Entity
 @Builder
-@Table(name = "user")
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
+@Table(name = "user")
 public class User extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -71,6 +71,7 @@ public class User extends BaseEntity {
     @Column(name = "duet_penalty_until")
     private LocalDateTime duetPenaltyUntil;
 
+    @Setter
     @Size(max = 512)
     @Column(name = "refresh_token", length = 512)
     private String refreshToken;

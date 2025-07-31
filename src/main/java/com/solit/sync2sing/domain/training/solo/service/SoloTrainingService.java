@@ -1,15 +1,15 @@
 package com.solit.sync2sing.domain.training.solo.service;
 
 import com.solit.sync2sing.domain.training.base.dto.*;
-import org.springframework.security.core.userdetails.UserDetails;
+import com.solit.sync2sing.global.security.CustomUserDetails;
 
 public interface SoloTrainingService {
 
-    SessionDTO getSession(UserDetails userDetails);
+    SessionDTO getSession(CustomUserDetails userDetails);
 
-    SessionDTO createSession(UserDetails userDetails, CreateSessionRequest createSessionRequest);
+    SessionDTO createSession(CustomUserDetails userDetails, CreateSessionRequest createSessionRequest);
 
-    void deleteSession(UserDetails userDetails);
+    void deleteSession(CustomUserDetails userDetails);
 
     SongListDTO getSongList(String type);
 

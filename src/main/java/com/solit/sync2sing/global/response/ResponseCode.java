@@ -26,6 +26,7 @@ public enum ResponseCode {
     INVALID_TRAINING_MODE_OR_ANALYSIS_TYPE(HttpStatus.BAD_REQUEST, "트레이닝 모드 또는 분석 타입 요청 값이 유효하지 않습니다."),
     EXTERNAL_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "외부 API 응답 시간 초과. 잠시 후 다시 시도해 주세요."),
     TRANSCRIBE_PARSING_FAILED(HttpStatus.BAD_GATEWAY, "Transcribe 결과 파싱 실패. 다시 시도해 주세요."),
+    RECORDING_NOT_FOUND(HttpStatus.NOT_FOUND, "녹음본을 찾을 수 없습니다."),
 
     SOLO_TRAINING_SESSION_FETCHED(HttpStatus.OK, "솔로 트레이닝 세션 정보 조회에 성공했습니다."),
     SOLO_TRAINING_SESSION_CREATED(HttpStatus.CREATED, "솔로 트레이닝 세션 생성에 성공했습니다."),
@@ -46,6 +47,7 @@ public enum ResponseCode {
     PARTNER_APPLICATION_REJECTED(HttpStatus.OK, "파트너 신청 거절이 완료되었습니다."),
     DUET_TRAINING_ROOMS_FETCHED(HttpStatus.OK, "듀엣 트레이닝 방 목록 조회에 성공했습니다."),
     DUET_TRAINING_ROOM_CREATED(HttpStatus.CREATED, "듀엣 트레이닝 방 생성에 성공했습니다."),
+    DUET_TRAINING_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "듀엣 트레이닝 방을 찾을 수 없습니다."),
     DUET_TRAINING_SESSION_FETCHED(HttpStatus.OK, "듀엣 트레이닝 세션 정보 조회에 성공했습니다."),
     DUET_TRAINING_SESSION_ENDED(HttpStatus.OK, "듀엣 트레이닝 세션 종료에 성공했습니다."),
     DUET_MR_SONG_LIST_FETCHED(HttpStatus.OK, "듀엣 트레이닝 MR 곡 목록 조회에 성공했습니다."),
@@ -73,6 +75,8 @@ public enum ResponseCode {
     BLACKLISTED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "블랙리스트에 등록된 JWT 토큰입니다."),
     LOGOUT_SUCCESS(HttpStatus.OK, "로그아웃에 성공했습니다."),
     INVALID_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "유효하지 않은 Refresh Token입니다."),
+    USER_INFO_UPDATE_SUCCESS(HttpStatus.OK, "회원 정보 수정 성공"),
+    INVALID_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청 형식입니다."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증되지 않은 요청입니다. 다시 로그인하세요."),
 
     USER_INFO_SUCCESS(HttpStatus.OK, "회원 정보 조회 성공"),

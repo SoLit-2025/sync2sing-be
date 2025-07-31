@@ -5,14 +5,14 @@ import com.solit.sync2sing.global.type.DuetTrainingRoomStatus;
 import com.solit.sync2sing.global.type.VoiceType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.data.annotation.CreatedDate;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Getter
-@Setter
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @Entity
 @Table(name = "duet_training_room")
 public class DuetTrainingRoom extends BaseEntity {
