@@ -47,6 +47,7 @@ public class TrainingSession extends BaseEntity {
     @Column(name = "curriculum_days", nullable = false)
     private Integer curriculumDays;
 
+    @Setter
     @Enumerated(EnumType.STRING)
     @NotNull
     @Column(name = "status", nullable = false, length = 50)

@@ -127,12 +127,19 @@ class TrainingServiceImpl implements TrainingService {
         AtomicBoolean first = new AtomicBoolean(true);
         List<TrainingSessionTraining> toSave = new ArrayList<>();
         toSave.addAll(buildSessionMappings(session, pitchList,  first));
+        first.set(true);
         toSave.addAll(buildSessionMappings(session, rhythmList, first));
+        first.set(true);
         toSave.addAll(buildSessionMappings(session, vocalList,  first));
+        first.set(true);
         toSave.addAll(buildSessionMappings(session, breathList, first));
         trainingSessionTrainingRepository.saveAll(toSave);
 
-        // 7) DTO 반환
+        // 7) 세션 상태 TRAINING_IN_PROGRESS로 변경
+        session.setStatus(SessionStatus.TRAINING_IN_PROGRESS);
+        trainingSessionRepository.save(session);
+
+        // 8) DTO 반환
         return CurriculumListResponse.builder()
                 .pitch(pitchList)
                 .rhythm(rhythmList)
@@ -196,7 +203,7 @@ class TrainingServiceImpl implements TrainingService {
 
 
     @Override
-    public TrainingDTO setTrainingProgress(
+    public SetTrainingProgressResponse setTrainingProgress(
             CustomUserDetails userDetails,
             SetTrainingProgressRequest request,
             Long sessionId,
@@ -221,8 +228,40 @@ class TrainingServiceImpl implements TrainingService {
                 ));
 
         sessionTraining.setProgress(request.getProgress());
+        trainingSessionTrainingRepository.save(sessionTraining);
 
-        return TrainingDTO.toDTO(training);
+        if (sessionTraining.getProgress() == 100) {
+            sessionTraining.setCurrentTraining(false);
+            trainingSessionTrainingRepository.save(sessionTraining);
+
+            // 다음 순서 훈련 current=true 로 설정
+            TrainingCategory category = sessionTraining.getTraining().getCategory();
+            Long currId = sessionTraining.getTraining().getId();
+
+            Optional<TrainingSessionTraining> nextOpt = trainingSessionTrainingRepository
+                    .findByTrainingSession(session).stream()
+                    .filter(tst -> tst.getTraining().getCategory() == category)
+                    .filter(tst -> tst.getTraining().getId() > currId)
+                    .min(Comparator.comparing(tst -> tst.getTraining().getId()));
+
+            nextOpt.ifPresent(next -> {
+                next.setCurrentTraining(true);
+                trainingSessionTrainingRepository.save(next);
+            });
+        }
+
+        // 모든 훈련의 progress가 100%인지 확인
+        boolean allDone = trainingSessionTrainingRepository
+                .findByTrainingSession(session).stream()
+                .allMatch(tst -> tst.getProgress() != null && tst.getProgress() >= 100);
+
+        // 모두 완료되었으면 세션 상태를 AFTER_TRAINING으로 변경
+        if (allDone && session.getStatus() != SessionStatus.AFTER_TRAINING) {
+            session.setStatus(SessionStatus.AFTER_TRAINING);
+            trainingSessionRepository.save(session);
+        }
+
+        return SetTrainingProgressResponse.toDTO(sessionTraining);
     }
 
     @Override
@@ -240,34 +279,23 @@ class TrainingServiceImpl implements TrainingService {
         }
 
         for (TrainingSession session : inProgressSessions) {
-            List<TrainingSessionTraining> inProgressSessionTrainings =
-                    trainingSessionTrainingRepository.findByTrainingSession(session);
+            List<TrainingSessionTraining> currentTrainings =
+                    trainingSessionTrainingRepository.findByTrainingSession(session).stream()
+                    .filter(TrainingSessionTraining::isCurrentTraining)
+                    .collect(Collectors.toList());
 
-            Map<TrainingCategory, TrainingSessionTraining> currentByCategory = inProgressSessionTrainings.stream()
-                    .filter(training -> training.getProgress() < 100)
-                    .collect(Collectors.groupingBy(
-                            training -> training.getTraining().getCategory(),
-                            Collectors.minBy(Comparator.comparing(training -> training.getTraining().getId()))
-                    ))
-                    .entrySet().stream()
-                    .filter(e -> e.getValue().isPresent())
-                    .collect(Collectors.toMap(
-                            Map.Entry::getKey,
-                            e -> e.getValue().get()
-                    ));
-
-            for (TrainingSessionTraining training : currentByCategory.values()) {
+            for (TrainingSessionTraining training : currentTrainings) {
                 Training t = training.getTraining();
                 CurrentTrainingListDTO.CurrentTrainingDTO ct = CurrentTrainingListDTO.CurrentTrainingDTO.builder()
                         .id(t.getId())
                         .sessionId(session.getId())
-                        .category(String.valueOf(t.getCategory()))
+                        .category(t.getCategory().name())
                         .title(t.getTitle())
                         .description(t.getDescription())
-                        .grade(String.valueOf(t.getGrade()))
+                        .grade(t.getGrade().name())
                         .trainingMinutes(t.getTrainingMinutes())
                         .progress(training.getProgress())
-                        .isCurrentTraining(true)
+                        .isCurrentTraining(training.isCurrentTraining())
                         .build();
 
                 if ("SOLO".equals(session.getTrainingMode().name())) {
