@@ -22,6 +22,8 @@ public class SessionDTO {
     private Integer trainingDays;
     private Integer keyAdjustment;
     private SongListDTO.SongDTO song;
+
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     private String preRecordingFileUrl;
 
     @JsonInclude(JsonInclude.Include.ALWAYS)

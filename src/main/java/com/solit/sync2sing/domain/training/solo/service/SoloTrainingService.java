@@ -3,9 +3,11 @@ package com.solit.sync2sing.domain.training.solo.service;
 import com.solit.sync2sing.domain.training.base.dto.*;
 import com.solit.sync2sing.global.security.CustomUserDetails;
 
+import java.util.Optional;
+
 public interface SoloTrainingService {
 
-    SessionDTO getSession(CustomUserDetails userDetails);
+    Optional<SessionDTO> getSession(CustomUserDetails userDetails);
 
     SessionDTO createSession(CustomUserDetails userDetails, CreateSessionRequest createSessionRequest);
 

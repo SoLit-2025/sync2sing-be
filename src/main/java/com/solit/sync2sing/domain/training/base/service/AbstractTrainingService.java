@@ -11,6 +11,7 @@ import com.solit.sync2sing.global.type.SessionStatus;
 import com.solit.sync2sing.global.type.TrainingCategory;
 import com.solit.sync2sing.global.type.TrainingMode;
 import com.solit.sync2sing.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 public abstract class AbstractTrainingService {
 
     private final TrainingMode trainingMode;
@@ -30,40 +32,20 @@ public abstract class AbstractTrainingService {
     private final LyricslineRepository lyricslineRepository;
     private final DuetSongPartRepository duetSongPartRepository;
 
-    public AbstractTrainingService(
-            TrainingMode trainingMode,
-            TrainingSessionRepository trainingSessionRepository,
-            TrainingSessionTrainingRepository trainingSessionTrainingRepository,
-            RecordingRepository recordingRepository,
-            DuetTrainingRoomRepository duetTrainingRoomRepository,
-            SongRepository songRepository,
-            LyricslineRepository lyricslineRepository,
-            DuetSongPartRepository duetSongPartRepository
-    ) {
-        this.trainingMode = trainingMode;
-        this.trainingSessionRepository = trainingSessionRepository;
-        this.trainingSessionTrainingRepository = trainingSessionTrainingRepository;
-        this.recordingRepository = recordingRepository;
-        this.duetTrainingRoomRepository = duetTrainingRoomRepository;
-        this.songRepository = songRepository;
-        this.lyricslineRepository = lyricslineRepository;
-        this.duetSongPartRepository = duetSongPartRepository;
-    }
-
-
-    SessionDTO getSession(CustomUserDetails userDetails) {
+    public Optional<SessionDTO> getSession(CustomUserDetails userDetails) {
 
         // 1) 내 세션 조회
-        TrainingSession mySession = trainingSessionRepository
+        TrainingSession mySession;
+        Optional<TrainingSession> mySessionOpt = trainingSessionRepository
                 .findByUser(userDetails.getUser()).stream()
                 .filter(s -> s.getTrainingMode() == trainingMode)
-                .findFirst()
-                .orElseThrow(() ->
-                        new ResponseStatusException(
-                                ResponseCode.TRAINING_SESSION_NOT_FOUND.getStatus(),
-                                ResponseCode.TRAINING_SESSION_NOT_FOUND.getMessage()
-                        )
-                );
+                .findFirst();
+
+        if (mySessionOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        mySession = mySessionOpt.get();
 
         // 2) SongDTO 빌드 (SOLO: id/title/artist, DUET: + userPartName)
         Song song = mySession.getSong();
@@ -100,14 +82,8 @@ public abstract class AbstractTrainingService {
         SongListDTO.SongDTO songDTO = songB.build();
 
         // 4) PRE / POST 녹음 URL 조회
-        Recording preRec = recordingRepository
-                .findByTrainingSessionAndRecordingPhase(mySession, RecordingContext.PRE)
-                .orElseThrow(() ->
-                        new ResponseStatusException(
-                                ResponseCode.RECORDING_NOT_FOUND.getStatus(),
-                                ResponseCode.RECORDING_NOT_FOUND.getMessage()
-                        )
-                );
+        Optional<Recording> preRec = recordingRepository
+                .findByTrainingSessionAndRecordingPhase(mySession, RecordingContext.PRE);
         Optional<Recording> postRecOpt = recordingRepository
                 .findByTrainingSessionAndRecordingPhase(mySession, RecordingContext.POST);
 
@@ -163,7 +139,10 @@ public abstract class AbstractTrainingService {
                 .trainingDays(mySession.getCurriculumDays())
                 .keyAdjustment(mySession.getKeyAdjustment())
                 .song(songDTO)
-                .preRecordingFileUrl(preRec.getAudioFile().getFileUrl())
+                .preRecordingFileUrl(preRec
+                        .map(r -> r.getAudioFile().getFileUrl())
+                        .orElse(null)
+                )
                 .postRecordingFileUrl(
                         postRecOpt
                                 .map(r -> r.getAudioFile().getFileUrl())
@@ -176,12 +155,12 @@ public abstract class AbstractTrainingService {
                     .postRecordingDueDate(postDue);
         }
 
-        return dtoB.build();
+        return Optional.of(dtoB.build());
 
     }
 
     @Transactional
-    SessionDTO createSession(CustomUserDetails userDetails, CreateSessionRequest request) {
+    public SessionDTO createSession(CustomUserDetails userDetails, CreateSessionRequest request) {
         // trainingDays 유효성 검사 (3, 7, 14만 허용)
         int days = request.getTrainingDays();
         if (days != 3 && days != 7 && days != 14) {
@@ -190,6 +169,8 @@ public abstract class AbstractTrainingService {
                     ResponseCode.INVALID_CURRICULUM_DAYS.getMessage()
             );
         }
+
+        // TODO: getKeyAdjustment 유효성 검사
 
         // 1) 요청한 Song 조회
         Song song = songRepository.findById(request.getSongId())
@@ -238,7 +219,7 @@ public abstract class AbstractTrainingService {
     }
 
     @Transactional
-    void deleteSession(CustomUserDetails userDetails) {
+    public void deleteSession(CustomUserDetails userDetails) {
         // 1) 현재 사용자·모드에 해당하는 세션 조회
         TrainingSession session = trainingSessionRepository.findByUser(userDetails.getUser()).stream()
                 .filter(s -> s.getTrainingMode() == trainingMode)
@@ -254,7 +235,7 @@ public abstract class AbstractTrainingService {
         trainingSessionRepository.delete(session);
     }
 
-    SongListDTO getSongList(String type) {
+    public SongListDTO getSongList(String type) {
         boolean isMr = "mr".equalsIgnoreCase(type);
         boolean isOriginal = "original".equalsIgnoreCase(type);
         if (!isMr && !isOriginal) {
@@ -325,8 +306,8 @@ public abstract class AbstractTrainingService {
                 .build();
     }
 
-    SongListDTO.SongDTO getSong(Long songId, String type) {
-        boolean isMr       = "mr".equalsIgnoreCase(type);
+    public SongListDTO.SongDTO getSong(Long songId, String type) {
+        boolean isMr = "mr".equalsIgnoreCase(type);
         boolean isOriginal = "original".equalsIgnoreCase(type);
         if (!isMr && !isOriginal) {
             throw new ResponseStatusException(
@@ -343,6 +324,14 @@ public abstract class AbstractTrainingService {
                                 ResponseCode.SONG_NOT_FOUND.getMessage()
                         )
                 );
+
+        // 1-1) 모드 일치 검사
+        if (song.getTrainingMode() != trainingMode) {
+            throw new ResponseStatusException(
+                    ResponseCode.INVALID_TRAINING_MODE_OR_ANALYSIS_TYPE.getStatus(),
+                    ResponseCode.INVALID_TRAINING_MODE_OR_ANALYSIS_TYPE.getMessage()
+            );
+        }
 
         // 2) DTO 빌더 준비
         SongListDTO.SongDTO.SongDTOBuilder songDTOBuilder = SongListDTO.SongDTO.builder()
