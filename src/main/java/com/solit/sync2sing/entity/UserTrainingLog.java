@@ -31,6 +31,7 @@ public class UserTrainingLog extends BaseEntity {
     @JoinColumn(name = "training_id", nullable = false)
     private Training training;
 
+    @Setter
     @NotNull
     @ColumnDefault("0")
     @Column(name = "training_count", nullable = false)

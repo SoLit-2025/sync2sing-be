@@ -25,7 +25,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +51,7 @@ class TrainingServiceImpl implements TrainingService {
             CustomUserDetails userDetails,
             GenerateCurriculumRequest request
     ) {
+        // 1) days → count
         int trainingCountPerCategory = switch (request.getTrainingDays()) {
             case 3 -> 1;
             case 7 -> 2;
@@ -59,51 +62,134 @@ class TrainingServiceImpl implements TrainingService {
             );
         };
 
-        Long userId = userDetails.getId();
+        // 2) 사용자 세션 조회
+        TrainingSession session = trainingSessionRepository.findByUser(userDetails.getUser()).stream()
+                .filter(s -> s.getTrainingMode().name().equals(request.getTrainingMode()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(
+                        ResponseCode.TRAINING_SESSION_NOT_FOUND.getStatus(),
+                        ResponseCode.TRAINING_SESSION_NOT_FOUND.getMessage()
+                ));
 
-        Set<Long> trainedIds = userTrainingLogRepository.findTrainedTrainingIdsByUserId(userId);
+        // 3) 기존 UserTrainingLog 전체 조회 → Map<trainingId, UserTrainingLog>
+        List<UserTrainingLog> existingLogs =
+                userTrainingLogRepository.findByUser(userDetails.getUser());
+        Map<Long, UserTrainingLog> logMap = existingLogs.stream()
+                .collect(Collectors.toMap(
+                        log -> log.getTraining().getId(),
+                        log -> log
+                ));
 
-        // TODO: 커리큘럼 저장 로직 추가
+        // 4) 각 카테고리별 추천 리스트
+        List<TrainingDTO> pitchList  = pickTrainings(TrainingCategory.PITCH,
+                TrainingGrade.valueOf(request.getPitch()),
+                trainingCountPerCategory, logMap);
+        List<TrainingDTO> rhythmList = pickTrainings(TrainingCategory.RHYTHM,
+                TrainingGrade.valueOf(request.getRhythm()),
+                trainingCountPerCategory, logMap);
+        List<TrainingDTO> vocalList  = pickTrainings(TrainingCategory.VOCALIZATION,
+                TrainingGrade.valueOf(request.getVocalization()),
+                trainingCountPerCategory, logMap);
+        List<TrainingDTO> breathList = pickTrainings(TrainingCategory.BREATH,
+                TrainingGrade.valueOf(request.getBreath()),
+                trainingCountPerCategory, logMap);
 
+        // 5) UserTrainingLog 업데이트 및 저장
+        List<UserTrainingLog> logsToSave = new ArrayList<>();
+        Stream.of(pitchList, rhythmList, vocalList, breathList)
+                .flatMap(List::stream)
+                .forEach(dto -> {
+                    UserTrainingLog log = logMap.get(dto.getId());
+                    if (log != null) {
+                        // 이미 있으면 +1
+                        log.setTrainingCount(log.getTrainingCount() + 1);
+                    } else {
+                        // 새로 추천된 훈련은 count=1
+                        log = UserTrainingLog.builder()
+                                .user(userDetails.getUser())
+                                .training(
+                                        trainingRepository.findById(dto.getId())
+                                                .orElseThrow(() -> new ResponseStatusException(
+                                                        ResponseCode.TRAINING_NOT_FOUND.getStatus(),
+                                                        ResponseCode.TRAINING_NOT_FOUND.getMessage()
+                                                ))
+                                )
+                                .trainingCount(1)
+                                .build();
+                    }
+                    logsToSave.add(log);
+                });
+        userTrainingLogRepository.saveAll(logsToSave);
+
+        // 6) SessionTraining 매핑 저장
+        AtomicBoolean first = new AtomicBoolean(true);
+        List<TrainingSessionTraining> toSave = new ArrayList<>();
+        toSave.addAll(buildSessionMappings(session, pitchList,  first));
+        toSave.addAll(buildSessionMappings(session, rhythmList, first));
+        toSave.addAll(buildSessionMappings(session, vocalList,  first));
+        toSave.addAll(buildSessionMappings(session, breathList, first));
+        trainingSessionTrainingRepository.saveAll(toSave);
+
+        // 7) DTO 반환
         return CurriculumListResponse.builder()
-                .pitch(pickTrainings(TrainingCategory.PITCH, TrainingGrade.valueOf(request.getPitch()), trainingCountPerCategory, trainedIds))
-                .rhythm(pickTrainings(TrainingCategory.RHYTHM, TrainingGrade.valueOf(request.getRhythm()), trainingCountPerCategory, trainedIds))
-                .vocalization(pickTrainings(TrainingCategory.VOCALIZATION, TrainingGrade.valueOf(request.getVocalization()), trainingCountPerCategory, trainedIds))
-                .breath(pickTrainings(TrainingCategory.BREATH, TrainingGrade.valueOf(request.getBreath()), trainingCountPerCategory, trainedIds))
+                .pitch(pitchList)
+                .rhythm(rhythmList)
+                .vocalization(vocalList)
+                .breath(breathList)
                 .build();
     }
 
-    // TODO: 첫 번째 훈련 isCurrentTraining 속성 True, 나머지 훈련 False
+
     private List<TrainingDTO> pickTrainings(
             TrainingCategory category,
             TrainingGrade grade,
             int count,
-            Set<Long> trainedIds
+            Map<Long, UserTrainingLog> logMap
     ) {
-        List<Training> allTrainings = trainingRepository.findByCategory(category).stream()
-                .filter(t -> t.getGrade().name().equals(grade.name()))
-                .toList();
-
-        List<Training> selected = allTrainings.stream()
-                .filter(t -> !trainedIds.contains(t.getId()))
-                .limit(count)
+        // 1) 해당 카테고리+등급 전체 훈련 조회
+        List<Training> all = trainingRepository.findByCategory(category).stream()
+                .filter(t -> t.getGrade() == grade)
                 .collect(Collectors.toList());
 
-        if (selected.size() < count) {
-            List<Training> fallback = allTrainings.stream()
-                    .filter(t -> trainedIds.contains(t.getId()))
-                    .filter(t -> selected.stream().noneMatch(u -> u.getId().equals(t.getId())))
-                    .limit(count - selected.size())
-                    .toList();
+        // 2) 훈련별 과거 수행 횟수 가져오기(없으면 0) 후 오름차순 정렬
+        List<Training> sorted = all.stream()
+                .sorted(Comparator.comparingInt(t -> {
+                    UserTrainingLog log = logMap.get(t.getId());
+                    return (log != null) ? log.getTrainingCount() : 0;
+                }))
+                .collect(Collectors.toList());
 
-            selected.addAll(fallback);
-        }
-
-        selected.sort(Comparator.comparingLong(Training::getId));
-
-        return selected.stream()
+        // 3) 상위 count개 추천
+        return sorted.stream()
+                .limit(count)
                 .map(TrainingDTO::toDTO)
                 .collect(Collectors.toList());
+    }
+
+
+    private List<TrainingSessionTraining> buildSessionMappings(
+            TrainingSession session,
+            List<TrainingDTO> dtos,
+            AtomicBoolean firstFlag
+    ) {
+        List<TrainingSessionTraining> mappings = new ArrayList<>();
+        for (TrainingDTO dto : dtos) {
+            Training training = trainingRepository.findById(dto.getId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            ResponseCode.TRAINING_NOT_FOUND.getStatus(),
+                            ResponseCode.TRAINING_NOT_FOUND.getMessage()
+                    ));
+
+            TrainingSessionTraining tst = TrainingSessionTraining.builder()
+                    .trainingSession(session)
+                    .training(training)
+                    .progress(0)
+                    .isCurrentTraining(firstFlag.getAndSet(false))
+                    .build();
+
+            mappings.add(tst);
+        }
+        return mappings;
     }
 
 

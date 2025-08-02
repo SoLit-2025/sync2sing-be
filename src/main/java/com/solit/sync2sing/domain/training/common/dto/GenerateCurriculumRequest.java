@@ -15,6 +15,9 @@ import lombok.NoArgsConstructor;
 public class GenerateCurriculumRequest {
 
     @NotNull
+    private String trainingMode;
+
+    @NotNull
     private String pitch;
 
     @NotNull
