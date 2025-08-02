@@ -9,12 +9,16 @@ import com.solit.sync2sing.domain.user.dto.request.UserInfoUpdateRequestDTO;
 import com.solit.sync2sing.domain.user.dto.response.UserInfoUpdateResponseDTO;
 import com.solit.sync2sing.domain.user.service.UserInfoUpdateService;
 import com.solit.sync2sing.domain.user.dto.response.UserInfoResponseDTO;
+import com.solit.sync2sing.domain.user.dto.response.SoloVocalAnalysisReportListResponseDTO;
+import com.solit.sync2sing.domain.user.service.SoloVocalAnalysisReportListService;
 import com.solit.sync2sing.domain.user.service.UserLoginService;
 import com.solit.sync2sing.domain.user.service.UserLogoutService;
 import com.solit.sync2sing.domain.user.service.UserSignupService;
 import com.solit.sync2sing.domain.user.service.UserInfoService;
+import com.solit.sync2sing.domain.user.service.impl.SoloVocalAnalysisReportListServiceImpl;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.response.ResponseDTO;
+
 import com.solit.sync2sing.global.util.SecurityUtil;
 
 import org.springframework.http.HttpHeaders;
@@ -22,7 +26,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.solit.sync2sing.global.security.CustomUserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -34,17 +43,22 @@ public class UserController {
     private final UserLogoutService userLogoutService;
     private final UserInfoUpdateService userInfoUpdateService;
     private final UserInfoService userInfoService;
+    private final SoloVocalAnalysisReportListService soloVocalAnalysisReportListService;
+
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
     public UserController(UserSignupService userSignupService,
                           UserLoginService userLoginService,
                           UserLogoutService userLogoutService,
                           UserInfoUpdateService userInfoUpdateService,
-                          UserInfoService userInfoService) {
+                          UserInfoService userInfoService,
+                          SoloVocalAnalysisReportListService soloVocalAnalysisReportListService) {
         this.userSignupService = userSignupService;
         this.userLoginService = userLoginService;
         this.userLogoutService = userLogoutService;
         this.userInfoUpdateService = userInfoUpdateService;
         this.userInfoService = userInfoService;
+        this.soloVocalAnalysisReportListService = soloVocalAnalysisReportListService;
     }
 
     @PostMapping("/signup")
@@ -164,4 +178,35 @@ public class UserController {
                     ));
         }
     }
+
+    @GetMapping("/reports")
+    public ResponseEntity<ResponseDTO<SoloVocalAnalysisReportListResponseDTO>> getSoloReportList(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        try {
+            if (userDetails == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ResponseDTO<>(ResponseCode.UNAUTHORIZED));
+            }
+
+            SoloVocalAnalysisReportListResponseDTO responseData =
+                    soloVocalAnalysisReportListService.getSoloAndGuestVocalAnalysisReportList(userDetails);
+
+            return ResponseEntity.ok(
+                    new ResponseDTO<>(ResponseCode.SOLO_VOCAL_ANALYSIS_REPORT_LIST_FETCHED, responseData)
+            );
+
+        } catch (Exception e) {
+            logger.error("API 호출 중 오류 발생 - 코드: {}, 메시지: {}, 예외: {}",
+                    ResponseCode.INTERNAL_ERROR.name(),
+                    ResponseCode.INTERNAL_ERROR.getMessage(),
+                    e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body(new ResponseDTO<>(ResponseCode.INTERNAL_ERROR));
+        }
+    }
+
+
+
+
 }

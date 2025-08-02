@@ -38,6 +38,7 @@ public enum ResponseCode {
     SOLO_ORIGINAL_SONG_LIST_FETCHED(HttpStatus.OK, "솔로 트레이닝 원곡 목록 조회에 성공했습니다."),
     SOLO_MR_SONG_FETCHED(HttpStatus.OK, "솔로 트레이닝 MR 곡 조회에 성공했습니다."),
     SOLO_ORIGINAL_SONG_FETCHED(HttpStatus.OK, "솔로 트레이닝 원곡 조회에 성공했습니다."),
+    SOLO_VOCAL_ANALYSIS_REPORT_LIST_FETCHED(HttpStatus.OK, "솔로 보컬 분석 리포트 목록 조회에 성공했습니다."),
     
     DUET_AUDIO_MERGED(HttpStatus.CREATED, "듀엣 음원 병합에 성공했습니다."),
     PARTNER_APPLICATION_CREATED(HttpStatus.CREATED, "파트너 신청이 완료되었습니다."),
