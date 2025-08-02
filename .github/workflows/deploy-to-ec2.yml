@@ -55,6 +55,7 @@ jobs:
           docker stop backend-server || true
           docker rm backend-server || true
           docker run -d --name backend-server -p 8080:8080 \
+            -e EC2_HOST= ${{ secrets.EC2_HOST }} \
             -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
             -e JWT_ACCESS_EXPIRATION=${{ secrets.JWT_ACCESS_EXPIRATION }} \
             -e JWT_REFRESH_EXPIRATION=${{ secrets.JWT_REFRESH_EXPIRATION }} \
@@ -68,5 +69,6 @@ jobs:
             -e S3_BUCKETNAME=${{ secrets.S3_BUCKETNAME }} \
             -e SPRING_PROFILES_ACTIVE=prod \
             -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+            -e REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }} \
             --network backend-network \
             ${{ secrets.DOCKER_IMAGE_NAME }}
