@@ -8,7 +8,7 @@ public interface TrainingService {
     
     CurriculumListResponse generateTrainingCurriculum(CustomUserDetails userDetails, GenerateCurriculumRequest generateCurriculumRequest);
 
-    TrainingDTO setTrainingProgress(CustomUserDetails userDetails, SetTrainingProgressRequest setTrainingProgressRequest, Long sessionId, Long trainingId);
+    SetTrainingProgressResponse setTrainingProgress(CustomUserDetails userDetails, SetTrainingProgressRequest setTrainingProgressRequest, Long sessionId, Long trainingId);
 
     CurrentTrainingListDTO getCurrentTrainingList(CustomUserDetails userDetails);
 
