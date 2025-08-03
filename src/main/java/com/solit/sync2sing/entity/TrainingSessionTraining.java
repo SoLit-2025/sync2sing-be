@@ -39,6 +39,7 @@ public class TrainingSessionTraining extends BaseEntity {
     @Column(name = "progress", nullable = false)
     private Integer progress;
 
+    @Setter
     @NotNull
     private boolean isCurrentTraining;
 

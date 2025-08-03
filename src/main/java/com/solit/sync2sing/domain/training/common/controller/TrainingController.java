@@ -36,7 +36,7 @@ public class TrainingController {
             ));
     }
 
-    @GetMapping("/training")
+    @GetMapping("/trainings/in-progress")
     public ResponseEntity<ResponseDTO> getCurrentTrainingList(
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
@@ -48,7 +48,7 @@ public class TrainingController {
             ));
     }
 
-    @PutMapping("/training/sessions/{session_id}/trainings/{training_id}/progress")
+    @PutMapping("/sessions/{sessionId}/trainings/{trainingId}/progress")
     public ResponseEntity<ResponseDTO> setTrainingProgress(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long sessionId,
