@@ -388,6 +388,13 @@ class TrainingServiceImpl implements TrainingService {
                     "  \"causeContent\": \"\",\n" +
                     "  \"proposalContent\": \"\"\n" +
                     "}\n" +
+                    "\n" +
+                    "공백, 특수문자 포함 아래 규칙을 지켜줘.\n" +
+                    "overall_review_title: 87Byte 이하\n" +
+                    "overall_review_content: 389Byte 이하\n" +
+                    "cause_content: 147Byte 이하\n" +
+                    "proposal_content: 147Byte 이하\n" +
+                    "\n" +
                     "음정 점수: " + request.getPitchAccuracy() + "\n" +
                     "박자 점수: " + request.getBeatAccuracy() + "\n" +
                     "발음 점수: " + pronunciationScore + "\n" +
@@ -506,6 +513,13 @@ class TrainingServiceImpl implements TrainingService {
                     "  \"causeContent\": \"\",\n" +
                     "  \"proposalContent\": \"\"\n" +
                     "}\n" +
+                    "\n" +
+                    "공백, 특수문자 포함 아래 규칙을 지켜줘.\n" +
+                    "overall_review_title: 87Byte 이하\n" +
+                    "overall_review_content: 389Byte 이하\n" +
+                    "cause_content: 147Byte 이하\n" +
+                    "proposal_content: 147Byte 이하\n" +
+                    "\n" +
                     "음정 점수: " + request.getPitchAccuracy() + "\n" +
                     "박자 점수: " + request.getBeatAccuracy() + "\n" +
                     "발음 점수: " + pronunciationScore + "\n" +
@@ -631,6 +645,13 @@ class TrainingServiceImpl implements TrainingService {
                     "  \"feedbackTitle\": \"\",\n" +
                     "  \"feedbackContent\": \"\"\n" +
                     "}\n" +
+                    "\n" +
+                    "공백, 특수문자 포함 아래 규칙을 지켜줘.\n" +
+                    "overall_review_title: 87Byte 이하\n" +
+                    "overall_review_content: 389Byte 이하\n" +
+                    "feedback_title: 87Byte 이하\n" +
+                    "feedback_content: 389Byte 이하\n" +
+                    "\n" +
                     "훈련 전 음정 점수: " + preReport.getPitchScore() + "\n" +
                     "훈련 전 박자 점수: " + preReport.getBeatScore() + "\n" +
                     "훈련 전 발음 점수: " + preReport.getPronunciationScore() + "\n" +
