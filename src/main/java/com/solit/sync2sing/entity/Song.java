@@ -1,0 +1,66 @@
+package com.solit.sync2sing.entity;
+
+import com.solit.sync2sing.global.entity.BaseEntity;
+import com.solit.sync2sing.global.type.TrainingMode;
+import com.solit.sync2sing.global.type.VoiceType;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.*;
+
+@Getter
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Entity
+@Table(name = "song")
+public class Song extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Long id;
+
+    @NotNull
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "original_audio_file_id", nullable = false)
+    private AudioFile originalAudioFile;
+
+    @NotNull
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "mr_audio_file_id", nullable = false)
+    private AudioFile mrAudioFile;
+
+    @NotNull
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "album_cover_file_id", nullable = false)
+    private ImageFile albumCoverFile;
+
+    @Enumerated(EnumType.STRING)
+    @NotNull
+    @Column(name = "training_mode", nullable = false, length = 10)
+    private TrainingMode trainingMode;
+
+    @Size(max = 255)
+    @NotNull
+    @Column(name = "title", nullable = false)
+    private String title;
+
+    @Size(max = 255)
+    @NotNull
+    @Column(name = "artist", nullable = false)
+    private String artist;
+
+    @Enumerated(EnumType.STRING)
+    @NotNull
+    @Column(name = "voice_type", nullable = false, length = 50)
+    private VoiceType voiceType;
+
+    @NotNull
+    @Column(name = "pitch_note_min", nullable = false)
+    private String pitchNoteMin;
+
+    @NotNull
+    @Column(name = "pitch_note_max", nullable = false)
+    private String pitchNoteMax;
+
+}
