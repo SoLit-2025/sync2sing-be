@@ -70,6 +70,7 @@ public class AdminSongServiceImpl implements AdminSongService {
                     .pitchNoteMin(request.getPitchNoteMin())
                     .pitchNoteMax(request.getPitchNoteMax())
                     .build();
+            songRepository.save(song);
 
             List<Lyricsline> lines = request.getLyrics().stream()
                     .map(dto -> Lyricsline.builder()
@@ -81,7 +82,6 @@ public class AdminSongServiceImpl implements AdminSongService {
                     .collect(Collectors.toList());
             lyricslineRepository.saveAll(lines);
 
-            songRepository.save(song);
         } catch (Exception e) {
             if (albumCoverS3Url != null) s3Util.deleteFileFromS3(albumCoverS3Url);
             if (originalAudioS3Url != null) s3Util.deleteFileFromS3(originalAudioS3Url);
