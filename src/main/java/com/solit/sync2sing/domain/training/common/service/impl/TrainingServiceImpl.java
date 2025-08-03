@@ -124,15 +124,11 @@ class TrainingServiceImpl implements TrainingService {
         userTrainingLogRepository.saveAll(logsToSave);
 
         // 6) SessionTraining 매핑 저장
-        AtomicBoolean first = new AtomicBoolean(true);
         List<TrainingSessionTraining> toSave = new ArrayList<>();
-        toSave.addAll(buildSessionMappings(session, pitchList,  first));
-        first.set(true);
-        toSave.addAll(buildSessionMappings(session, rhythmList, first));
-        first.set(true);
-        toSave.addAll(buildSessionMappings(session, vocalList,  first));
-        first.set(true);
-        toSave.addAll(buildSessionMappings(session, breathList, first));
+        toSave.addAll(buildSessionMappings(session, pitchList));
+        toSave.addAll(buildSessionMappings(session, rhythmList));
+        toSave.addAll(buildSessionMappings(session, vocalList));
+        toSave.addAll(buildSessionMappings(session, breathList));
         trainingSessionTrainingRepository.saveAll(toSave);
 
         // 7) 세션 상태 TRAINING_IN_PROGRESS로 변경
@@ -171,6 +167,7 @@ class TrainingServiceImpl implements TrainingService {
         // 3) 상위 count개 추천
         return sorted.stream()
                 .limit(count)
+                .sorted(Comparator.comparingLong(Training::getId))
                 .map(TrainingDTO::toDTO)
                 .collect(Collectors.toList());
     }
@@ -178,9 +175,9 @@ class TrainingServiceImpl implements TrainingService {
 
     private List<TrainingSessionTraining> buildSessionMappings(
             TrainingSession session,
-            List<TrainingDTO> dtos,
-            AtomicBoolean firstFlag
+            List<TrainingDTO> dtos
     ) {
+        boolean firstFlag = true;
         List<TrainingSessionTraining> mappings = new ArrayList<>();
         for (TrainingDTO dto : dtos) {
             Training training = trainingRepository.findById(dto.getId())
@@ -193,10 +190,12 @@ class TrainingServiceImpl implements TrainingService {
                     .trainingSession(session)
                     .training(training)
                     .progress(0)
-                    .isCurrentTraining(firstFlag.getAndSet(false))
+                    .isCurrentTraining(firstFlag)
                     .build();
 
             mappings.add(tst);
+
+            firstFlag = false;
         }
         return mappings;
     }
