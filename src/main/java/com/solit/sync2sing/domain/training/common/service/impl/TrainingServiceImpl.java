@@ -26,7 +26,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -89,8 +88,8 @@ class TrainingServiceImpl implements TrainingService {
         List<TrainingDTO> rhythmList = pickTrainings(TrainingCategory.RHYTHM,
                 TrainingGrade.valueOf(request.getRhythm()),
                 trainingCountPerCategory, logMap);
-        List<TrainingDTO> vocalList  = pickTrainings(TrainingCategory.VOCALIZATION,
-                TrainingGrade.valueOf(request.getVocalization()),
+        List<TrainingDTO> vocalList  = pickTrainings(TrainingCategory.PRONUNCIATION,
+                TrainingGrade.valueOf(request.getPronunciation()),
                 trainingCountPerCategory, logMap);
         List<TrainingDTO> breathList = pickTrainings(TrainingCategory.BREATH,
                 TrainingGrade.valueOf(request.getBreath()),
@@ -139,7 +138,7 @@ class TrainingServiceImpl implements TrainingService {
         return CurriculumListResponse.builder()
                 .pitch(pitchList)
                 .rhythm(rhythmList)
-                .vocalization(vocalList)
+                .pronunciation(vocalList)
                 .breath(breathList)
                 .build();
     }

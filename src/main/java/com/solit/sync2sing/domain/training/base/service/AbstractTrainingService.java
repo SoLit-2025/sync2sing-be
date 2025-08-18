@@ -120,13 +120,13 @@ public abstract class AbstractTrainingService {
         // up-cast 및 CurriculumListResponse 빌드
         List<TrainingDTO> pitchList  = new ArrayList<>(curriculumMap.get(TrainingCategory.PITCH));
         List<TrainingDTO> rhythmList = new ArrayList<>(curriculumMap.get(TrainingCategory.RHYTHM));
-        List<TrainingDTO> vocalList  = new ArrayList<>(curriculumMap.get(TrainingCategory.VOCALIZATION));
+        List<TrainingDTO> vocalList  = new ArrayList<>(curriculumMap.get(TrainingCategory.PRONUNCIATION));
         List<TrainingDTO> breathList = new ArrayList<>(curriculumMap.get(TrainingCategory.BREATH));
 
         CurriculumListResponse curriculum = CurriculumListResponse.builder()
                 .pitch(pitchList)
                 .rhythm(rhythmList)
-                .vocalization(vocalList)
+                .pronunciation(vocalList)
                 .breath(breathList)
                 .build();
 
