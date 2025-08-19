@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -46,6 +47,15 @@ public abstract class AbstractTrainingService {
         }
 
         mySession = mySessionOpt.get();
+
+        // 훈련 데드라인이 지났는지 확인
+        LocalDate deadlineDate = mySession.getCurriculumEndDate().toLocalDate();
+        boolean deadlineReached = LocalDate.now().isAfter(deadlineDate);
+
+        if (deadlineReached && mySession.getStatus() != SessionStatus.AFTER_TRAINING) {
+            mySession.setStatus(SessionStatus.AFTER_TRAINING);
+            trainingSessionRepository.save(mySession);
+        }
 
         // 2) SongDTO 빌드 (SOLO: id/title/artist, DUET: + userPartName)
         Song song = mySession.getSong();

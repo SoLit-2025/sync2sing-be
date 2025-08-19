@@ -313,16 +313,16 @@ class TrainingServiceImpl implements TrainingService {
             MultipartFile vocalFile,
             GenerateVocalAnalysisReportRequest request
     ) {
-        String mode = request.getTrainingMode();
-        String type = request.getAnalysisType();
+        TrainingMode mode = TrainingMode.valueOf(request.getTrainingMode());
+        RecordingContext type = RecordingContext.valueOf(request.getAnalysisType());
 
-        if (type.equals("GUEST")) {
+        if (type.equals(RecordingContext.GUEST)) {
             return guestAnalysis(vocalFile, request);
-        } else if (type.equals("PRE")) {
-            return preAnalysis(vocalFile, request, userDetails);
-        } else if (mode.equals("SOLO") && type.equals("POST")) {
+        } else if (type.equals(RecordingContext.PRE)) {
+            return preAnalysis(mode, vocalFile, request, userDetails);
+        } else if (mode.equals(TrainingMode.SOLO) && type.equals(RecordingContext.POST)) {
             return soloPostAnalysis(vocalFile, request, userDetails);
-        } else if (mode.equals("DUET") && type.equals("POST")) {
+        } else if (mode.equals(TrainingMode.DUET) && type.equals(RecordingContext.POST)) {
             return duetPostAnalysis(vocalFile, request, userDetails);
         } else {
             throw new ResponseStatusException(
@@ -453,6 +453,7 @@ class TrainingServiceImpl implements TrainingService {
     }
 
     private PreVocalAnalysisReportResponse preAnalysis(
+            TrainingMode trainingMode,
             MultipartFile vocalFile,
             GenerateVocalAnalysisReportRequest request,
             CustomUserDetails userDetails
@@ -550,9 +551,10 @@ class TrainingServiceImpl implements TrainingService {
             s3Util.deleteFileFromS3(recordingAudioS3Url);
 
             VocalAnalysisReport vocalAnalysisReport = VocalAnalysisReport.builder()
+                    .user(userDetails.getUser())
                     .song(trsiningSong)
                     .title(vocalAnalysisReportTitle(trsiningSong.getTitle()))
-                    .trainingMode(TrainingMode.SOLO)
+                    .trainingMode(trainingMode)
                     .reportType(RecordingContext.PRE)
                     .pitchScore(request.getPitchAccuracy())
                     .beatScore(request.getBeatAccuracy())
@@ -686,6 +688,7 @@ class TrainingServiceImpl implements TrainingService {
             s3Util.deleteFileFromS3(recordingAudioS3Url);
 
             VocalAnalysisReport vocalAnalysisReport = VocalAnalysisReport.builder()
+                    .user(userDetails.getUser())
                     .song(trsiningSong)
                     .title(vocalAnalysisReportTitle(trsiningSong.getTitle()))
                     .trainingMode(TrainingMode.SOLO)
