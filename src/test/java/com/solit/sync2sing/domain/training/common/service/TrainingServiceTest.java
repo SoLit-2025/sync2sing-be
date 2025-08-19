@@ -105,7 +105,7 @@ public class TrainingServiceTest {
                 .build();
 
         Training t5 = Training.builder()
-                .category(TrainingCategory.VOCALIZATION)
+                .category(TrainingCategory.PRONUNCIATION)
                 .title("발성 기본 자세 익히기")
                 .grade(TrainingGrade.LOW)
                 .description("기초 자세 훈련입니다.")
@@ -113,7 +113,7 @@ public class TrainingServiceTest {
                 .build();
 
         Training t6 = Training.builder()
-                .category(TrainingCategory.VOCALIZATION)
+                .category(TrainingCategory.PRONUNCIATION)
                 .title("강약 조절 발성 연습")
                 .grade(TrainingGrade.LOW)
                 .description("발성 표현력 향상 훈련입니다.")
@@ -145,7 +145,7 @@ public class TrainingServiceTest {
                 .builder()
                 .pitch(String.valueOf(TrainingGrade.MEDIUM))
                 .rhythm(String.valueOf(TrainingGrade.HIGH))
-                .vocalization(String.valueOf(TrainingGrade.LOW))
+                .pronunciation(String.valueOf(TrainingGrade.LOW))
                 .breath(String.valueOf(TrainingGrade.MEDIUM))
                 .trainingDays(7)
                 .build();
@@ -156,7 +156,7 @@ public class TrainingServiceTest {
         // then
         assertEquals(2, response.getPitch().size());
         assertEquals(2, response.getRhythm().size());
-        assertEquals(2, response.getVocalization().size());
+        assertEquals(2, response.getPronunciation().size());
         assertEquals(2, response.getBreath().size());
 
         assertEquals("음정 안정 훈련", response.getPitch().get(0).getTitle());

@@ -14,6 +14,6 @@ import java.util.List;
 public class CurriculumListResponse {
     private List<TrainingDTO> pitch;
     private List<TrainingDTO> rhythm;
-    private List<TrainingDTO> vocalization;
+    private List<TrainingDTO> pronunciation;
     private List<TrainingDTO> breath;
 }
