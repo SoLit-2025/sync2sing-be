@@ -181,16 +181,22 @@ public class UserController {
 
     @GetMapping("/reports")
     public ResponseEntity<ResponseDTO<SoloVocalAnalysisReportListResponseDTO>> getSoloReportList(
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(required = true) String mode)
+    {
 
         try {
-            if (userDetails == null) {
+            if(!"solo".equalsIgnoreCase(mode)){
+                return ResponseEntity.badRequest()
+                        .body(new ResponseDTO<>(ResponseCode.INVALID_REQUEST));
+            }
+            if(userDetails == null){
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(new ResponseDTO<>(ResponseCode.UNAUTHORIZED));
             }
 
             SoloVocalAnalysisReportListResponseDTO responseData =
-                    soloVocalAnalysisReportListService.getSoloAndGuestVocalAnalysisReportList(userDetails);
+                    soloVocalAnalysisReportListService.getSoloVocalAnalysisReportList(userDetails);
 
             return ResponseEntity.ok(
                     new ResponseDTO<>(ResponseCode.SOLO_VOCAL_ANALYSIS_REPORT_LIST_FETCHED, responseData)
@@ -205,7 +211,6 @@ public class UserController {
                     .body(new ResponseDTO<>(ResponseCode.INTERNAL_ERROR));
         }
     }
-
 
 
 

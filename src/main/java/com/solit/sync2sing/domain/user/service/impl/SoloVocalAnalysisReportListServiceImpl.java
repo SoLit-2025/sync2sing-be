@@ -26,41 +26,26 @@ import java.util.stream.Collectors;
 public class SoloVocalAnalysisReportListServiceImpl implements SoloVocalAnalysisReportListService {
 
     private final VocalAnalysisReportRepository vocalAnalysisReportRepository;
-
     private static final Logger logger = LoggerFactory.getLogger(SoloVocalAnalysisReportListServiceImpl.class);
 
     @Override
-    public SoloVocalAnalysisReportListResponseDTO getSoloAndGuestVocalAnalysisReportList(CustomUserDetails userDetails) {
-        if (userDetails == null) {
-            return SoloVocalAnalysisReportListResponseDTO.builder()
-                    .status(ResponseCode.UNAUTHORIZED.getStatus().value())
-                    .message(ResponseCode.UNAUTHORIZED.getMessage())
-                    .data(List.of())
-                    .build();
+    public SoloVocalAnalysisReportListResponseDTO getSoloVocalAnalysisReportList(CustomUserDetails userDetails) {
+
+        List<VocalAnalysisReport> soloReports = new ArrayList<>();
+
+        if (userDetails != null) {
+            Long userId = userDetails.getId();
+            List<RecordingContext> soloReportTypes = List.of(RecordingContext.PRE, RecordingContext.POST);
+
+            soloReports = vocalAnalysisReportRepository.findAllByUser_IdAndTrainingModeAndReportTypeInOrderByCreatedAtDesc(
+                    userId,
+                    TrainingMode.SOLO,
+                    soloReportTypes
+            );
         }
 
-        Long userId = userDetails.getId();
-
-        // 1) SOLO 리포트 조회 (PRE, POST)
-        List<RecordingContext> soloReportTypes = List.of(RecordingContext.PRE, RecordingContext.POST);
-        List<VocalAnalysisReport> soloReports = vocalAnalysisReportRepository.findAllByUser_IdAndTrainingModeAndReportTypeInOrderByCreatedAtDesc(
-                userId,
-                TrainingMode.SOLO,
-                soloReportTypes
-        );
-
-        // 2) GUEST 리포트 조회 (GUEST)
-        List<VocalAnalysisReport> guestReports = vocalAnalysisReportRepository.findAllByTrainingModeAndReportTypeOrderByCreatedAtDesc(
-                TrainingMode.GUEST,
-                RecordingContext.GUEST
-        );
-
-        List<VocalAnalysisReport> combinedReports = new ArrayList<>();
-        combinedReports.addAll(soloReports);
-        combinedReports.addAll(guestReports);
-
-        // 3) title에서 날짜 추출, 내림차순 정렬
-        combinedReports.sort((r1, r2) -> {
+        // 날짜 기준 최신순 정렬
+        soloReports.sort((r1, r2) -> {
             LocalDate d1 = tryParseDateFromTitle(r1.getTitle());
             LocalDate d2 = tryParseDateFromTitle(r2.getTitle());
             if (d1 == null) d1 = LocalDate.MIN;
@@ -68,7 +53,7 @@ public class SoloVocalAnalysisReportListServiceImpl implements SoloVocalAnalysis
             return d2.compareTo(d1);
         });
 
-        List<SoloVocalAnalysisReportListResponseDTO.SoloVocalAnalysisReportSummary> mergedList = combinedReports.stream()
+        List<SoloVocalAnalysisReportListResponseDTO.SoloVocalAnalysisReportSummary> mergedList = soloReports.stream()
                 .map(report -> SoloVocalAnalysisReportListResponseDTO.SoloVocalAnalysisReportSummary.builder()
                         .reportId(report.getId())
                         .title(report.getTitle())
@@ -94,5 +79,5 @@ public class SoloVocalAnalysisReportListServiceImpl implements SoloVocalAnalysis
         }
         return null;
     }
-
 }
+

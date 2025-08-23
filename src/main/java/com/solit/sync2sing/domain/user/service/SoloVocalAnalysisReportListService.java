@@ -5,6 +5,6 @@ import com.solit.sync2sing.global.security.CustomUserDetails;
 
 
 public interface SoloVocalAnalysisReportListService {
-    SoloVocalAnalysisReportListResponseDTO getSoloAndGuestVocalAnalysisReportList(CustomUserDetails userDetails);
+    SoloVocalAnalysisReportListResponseDTO getSoloVocalAnalysisReportList(CustomUserDetails userDetails);
 }
 
