@@ -71,10 +71,17 @@ public class SignupServiceImplementation implements UserSignupService {
 
 
     private void validateRequest(SignupRequestDTO requestDTO) {
+        String username = requestDTO.getUsername();
         if (requestDTO.getUsername() == null || requestDTO.getPassword() == null || requestDTO.getNickname() == null) {
             throw new ResponseStatusException(
                     ResponseCode.SIGNUP_REQUIRED_FIELDS.getStatus(),
                     ResponseCode.SIGNUP_REQUIRED_FIELDS.getMessage()
+            );
+        }
+        if (username.length() < 6 || username.length() >= 15 || !username.matches("^[a-z0-9]+$")) {
+            throw new ResponseStatusException(
+                    ResponseCode.INVALID_USERNAME_FORMAT.getStatus(), // INVALID_USERNAME_FORMAT 등 새 코드 추가 권장
+                    ResponseCode.INVALID_USERNAME_FORMAT.getMessage()
             );
         }
         if (userRepository.existsByUsername(requestDTO.getUsername())) {
