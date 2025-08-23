@@ -12,10 +12,12 @@ import com.solit.sync2sing.global.chatgpt.service.ChatGPTService;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.security.CustomUserDetails;
 import com.solit.sync2sing.global.type.*;
+import com.solit.sync2sing.global.util.MeasureTime;
 import com.solit.sync2sing.global.util.S3Util;
 import com.solit.sync2sing.global.transcription.service.transcriptionService;
 import com.solit.sync2sing.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,6 +33,7 @@ import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 class TrainingServiceImpl implements TrainingService {
 
     private final S3Util s3Util;
@@ -353,8 +356,32 @@ class TrainingServiceImpl implements TrainingService {
             CompletableFuture<String> transcriptFuture = transcriptionService.transcribeAndGetText(jobName, recordingAudioS3Url);
             CompletableFuture<AiVoiceAnalysisResponse> aiFuture = aiService.analyzeWithAiServer(recordingAudioS3Url);
 
-            String transcriptText = transcriptFuture.get(60, TimeUnit.SECONDS);
-            AiVoiceAnalysisResponse aiResult = aiFuture.get(60, TimeUnit.SECONDS);
+            String transcriptText = MeasureTime.run("transcriptFuture.get",
+                    () -> {
+                        try {
+                            return transcriptFuture.get(60, TimeUnit.SECONDS);
+                        } catch (ResponseStatusException rse) {
+                            log.error("{} - {}", rse.getStatusCode(), rse.getReason(), rse);
+                            throw rse;
+
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.TRANSCRIPTION_FAIL.getStatus(),
+                                    ResponseCode.TRANSCRIPTION_FAIL.getMessage()
+                            );
+                        }
+                    });
+            AiVoiceAnalysisResponse aiResult = MeasureTime.run("aiFuture.get",
+                    () -> {
+                        try {
+                            return aiFuture.get(60, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL.getStatus(),
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL.getMessage()
+                            );
+                        }
+                    });
 
             List<String> typeList = new ArrayList<>();
             List<String> ratioList = new ArrayList<>();
@@ -432,7 +459,7 @@ class TrainingServiceImpl implements TrainingService {
                     typeList.get(2) + " " + ratioList.get(2) + "\n"
                     ;
 
-            String gptResponse = chatGPTService.askToGpt(userPrompt);
+            String gptResponse = MeasureTime.run("askToGpt", () -> chatGPTService.askToGpt(userPrompt));
 
             gptResponse = gptResponse.replaceAll("```json|```", "").trim();
 
@@ -464,12 +491,19 @@ class TrainingServiceImpl implements TrainingService {
             vocalAnalysisReportRepository.save(vocalAnalysisReport);
 
             return PreVocalAnalysisReportResponse.toDTO(vocalAnalysisReport);
+        } catch (ResponseStatusException rse) {
+            if (recordingAudioS3Url != null) s3Util.deleteFileFromS3(recordingAudioS3Url);
+
+            log.error("{} - {}", rse.getStatusCode(), rse.getReason(), rse);
+            throw rse;
+
         } catch (Exception e) {
             if (recordingAudioS3Url != null) s3Util.deleteFileFromS3(recordingAudioS3Url);
 
+            log.error("guestAnalysis 예상치 못한 예외 발생", e);
             throw new ResponseStatusException(
-                    ResponseCode.FILE_UPLOAD_FAIL_S3_ROLLBACK.getStatus(),
-                    ResponseCode.FILE_UPLOAD_FAIL_S3_ROLLBACK.getMessage()
+                    ResponseCode.INTERNAL_ERROR.getStatus(),
+                    ResponseCode.INTERNAL_ERROR.getMessage()
             );
         }
     }
@@ -499,8 +533,28 @@ class TrainingServiceImpl implements TrainingService {
             CompletableFuture<String> transcriptFuture = transcriptionService.transcribeAndGetText(jobName, recordingAudioS3Url);
             CompletableFuture<AiVoiceAnalysisResponse> aiFuture = aiService.analyzeWithAiServer(recordingAudioS3Url);
 
-            String transcriptText = transcriptFuture.get(60, TimeUnit.SECONDS);
-            AiVoiceAnalysisResponse aiResult = aiFuture.get(60, TimeUnit.SECONDS);
+            String transcriptText = MeasureTime.run("transcriptFuture.get",
+                    () -> {
+                        try {
+                            return transcriptFuture.get(60, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.TRANSCRIPTION_FAIL.getStatus(),
+                                    ResponseCode.TRANSCRIPTION_FAIL.getMessage()
+                            );
+                        }
+                    });
+            AiVoiceAnalysisResponse aiResult = MeasureTime.run("aiFuture.get",
+                    () -> {
+                        try {
+                            return aiFuture.get(60, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL.getStatus(),
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL.getMessage()
+                            );
+                        }
+                    });
 
             List<String> typeList = new ArrayList<>();
             List<String> ratioList = new ArrayList<>();
@@ -580,7 +634,7 @@ class TrainingServiceImpl implements TrainingService {
                             typeList.get(2) + " " + ratioList.get(2) + "\n"
                     ;
 
-            String gptResponse = chatGPTService.askToGpt(userPrompt);
+            String gptResponse = MeasureTime.run("askToGpt", () -> chatGPTService.askToGpt(userPrompt));
 
             gptResponse = gptResponse.replaceAll("```json|```", "").trim();
 
@@ -613,12 +667,19 @@ class TrainingServiceImpl implements TrainingService {
             vocalAnalysisReportRepository.save(vocalAnalysisReport);
 
             return PreVocalAnalysisReportResponse.toDTO(vocalAnalysisReport);
+        } catch (ResponseStatusException rse) {
+            if (recordingAudioS3Url != null) s3Util.deleteFileFromS3(recordingAudioS3Url);
+
+            log.error("{} - {}", rse.getStatusCode(), rse.getReason(), rse);
+            throw rse;
+
         } catch (Exception e) {
             if (recordingAudioS3Url != null) s3Util.deleteFileFromS3(recordingAudioS3Url);
 
+            log.error("preAnalysis 예상치 못한 예외 발생", e);
             throw new ResponseStatusException(
-                    ResponseCode.FILE_UPLOAD_FAIL_S3_ROLLBACK.getStatus(),
-                    ResponseCode.FILE_UPLOAD_FAIL_S3_ROLLBACK.getMessage()
+                    ResponseCode.INTERNAL_ERROR.getStatus(),
+                    ResponseCode.INTERNAL_ERROR.getMessage()
             );
         }
     }
@@ -654,8 +715,28 @@ class TrainingServiceImpl implements TrainingService {
             CompletableFuture<String> transcriptFuture = transcriptionService.transcribeAndGetText(jobName, recordingAudioS3Url);
             CompletableFuture<AiVoiceAnalysisResponse> aiFuture = aiService.analyzeWithAiServer(recordingAudioS3Url);
 
-            String transcriptText = transcriptFuture.get(60, TimeUnit.SECONDS);
-            AiVoiceAnalysisResponse aiResult = aiFuture.get(60, TimeUnit.SECONDS);
+            String transcriptText = MeasureTime.run("transcriptFuture.get",
+                    () -> {
+                        try {
+                            return transcriptFuture.get(60, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.TRANSCRIPTION_FAIL.getStatus(),
+                                    ResponseCode.TRANSCRIPTION_FAIL.getMessage()
+                            );
+                        }
+                    });
+            AiVoiceAnalysisResponse aiResult = MeasureTime.run("aiFuture.get",
+                    () -> {
+                        try {
+                            return aiFuture.get(60, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL.getStatus(),
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL.getMessage()
+                            );
+                        }
+                    });
 
             List<String> typeList = new ArrayList<>();
             List<String> ratioList = new ArrayList<>();
@@ -739,7 +820,7 @@ class TrainingServiceImpl implements TrainingService {
                             typeList.get(2) + " " + ratioList.get(2) + "\n"
                     ;
 
-            String gptResponse = chatGPTService.askToGpt(userPrompt);
+            String gptResponse = MeasureTime.run("askToGpt", () -> chatGPTService.askToGpt(userPrompt));
 
             gptResponse = gptResponse.replaceAll("```json|```", "").trim();
 
@@ -773,12 +854,19 @@ class TrainingServiceImpl implements TrainingService {
             vocalAnalysisReportRepository.save(vocalAnalysisReport);
 
             return PostVocalAnalysisReportResponse.toDTO(vocalAnalysisReport);
+        } catch (ResponseStatusException rse) {
+            if (recordingAudioS3Url != null) s3Util.deleteFileFromS3(recordingAudioS3Url);
+
+            log.error("{} - {}", rse.getStatusCode(), rse.getReason(), rse);
+            throw rse;
+
         } catch (Exception e) {
             if (recordingAudioS3Url != null) s3Util.deleteFileFromS3(recordingAudioS3Url);
 
+            log.error("soloPostAnalysis 예상치 못한 예외 발생", e);
             throw new ResponseStatusException(
-                    ResponseCode.FILE_UPLOAD_FAIL_S3_ROLLBACK.getStatus(),
-                    ResponseCode.FILE_UPLOAD_FAIL_S3_ROLLBACK.getMessage()
+                    ResponseCode.INTERNAL_ERROR.getStatus(),
+                    ResponseCode.INTERNAL_ERROR.getMessage()
             );
         }
     }

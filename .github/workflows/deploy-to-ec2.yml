@@ -74,4 +74,8 @@ jobs:
             -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
             -e REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }} \
             --network backend-network \
+            -v /home/ubuntu/sync2sing-logs:/logs \
+            --log-driver json-file \
+            --log-opt max-size=10m \
+            --log-opt max-file=3 \
             ${{ secrets.DOCKER_IMAGE_NAME }}

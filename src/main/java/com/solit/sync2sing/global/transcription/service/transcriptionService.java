@@ -51,8 +51,8 @@ public class transcriptionService {
 
         if (job.transcriptionJobStatus() != TranscriptionJobStatus.COMPLETED) {
             throw new ResponseStatusException(
-                    ResponseCode.INTERNAL_ERROR.getStatus(),
-                    ResponseCode.INTERNAL_ERROR.getMessage()
+                    ResponseCode.EXTERNAL_TIMEOUT.getStatus(),
+                    ResponseCode.EXTERNAL_TIMEOUT.getMessage()
             );
         }
 
