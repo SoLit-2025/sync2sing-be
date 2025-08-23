@@ -8,7 +8,7 @@ import com.solit.sync2sing.global.ai.dto.AiVoiceAnalysisResponse;
 import com.solit.sync2sing.global.ai.service.AiService;
 import com.solit.sync2sing.global.chatgpt.dto.SoloPostResponse;
 import com.solit.sync2sing.global.chatgpt.dto.SoloPreResponse;
-import com.solit.sync2sing.global.chatgpt.sevice.ChatGPTService;
+import com.solit.sync2sing.global.chatgpt.service.ChatGPTService;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.security.CustomUserDetails;
 import com.solit.sync2sing.global.type.*;
@@ -376,23 +376,52 @@ class TrainingServiceImpl implements TrainingService {
             // 호흡 평가
             int breathScore = 60;
 
-            String userPrompt = "사용자의 음정, 박자, 발음, 호흡 점수와 사용자의 발성 유형 예측 결과 가장 확률이 높은 상위 3개 태그와 그 확률을 알려줄게.\n" +
-                    "너는 총평 제목(overallReviewTitle), 총평 내용(overallReviewContent), 총평의 원인(causeContent), 추가적인 제안(proposalContent) 4가지를 알려줘.\n" +
-                    "\n" +
-                    "아래 네 가지 항목을 JSON 형식의 문자열로 답변해줘. 다른 말은 하지 말고 오직 JSON 형식의 문자열 응답만 줘.\n" +
-                    "{\n" +
-                    "  \"overallReviewTitle\": \"\",\n" +
-                    "  \"overallReviewContent\": \"\",\n" +
-                    "  \"causeContent\": \"\",\n" +
-                    "  \"proposalContent\": \"\"\n" +
-                    "}\n" +
-                    "\n" +
-                    "공백, 특수문자 포함 아래 규칙을 지켜줘.\n" +
-                    "overall_review_title: 87Byte 이하\n" +
-                    "overall_review_content: 389Byte 이하\n" +
-                    "cause_content: 147Byte 이하\n" +
-                    "proposal_content: 147Byte 이하\n" +
-                    "\n" +
+            String userPrompt =
+                    "## 페르소나\n"
+                    + "* 역할: 10년차 보컬 트레이닝 전문가\n"
+                    + "* 대상: 음악 이론 기초 지식 미보유 초·중급 학습자\n"
+                    + "* 톤: 친절·간결·구체\n"
+                    + "* 역량: 점수·태그 기반 진단, 즉시 실행 가능한 과제 제안\n"
+                    + "\n"
+                    + "## 레시피/절차 생성\n"
+                    + "* 입력해석: 4개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
+                    + "* 우선순위: 60점 미만 항목 → 60~80점 항목 → 80점 이상 항목 순\n"
+                    + "* 작성순서: 제목(한줄) → 상태요약(1~3문장) → 가능한 원인(가설) → 실행 제안(구체적 행동 지시)\n"
+                    + "\n"
+                    + "## 템플릿\n"
+                    + "* 출력형식: JSON 단일 객체, 키 추가·누락 금지, 값: 문자열\n"
+                    + "* 스키마:\n"
+                    + "{\n"
+                    + "\"overallReviewTitle\": \"\",\n"
+                    + "\"overallReviewContent\": \"\",\n"
+                    + "\"causeContent\": \"\",\n"
+                    + "\"proposalContent\": \"\"\n"
+                    + "}\n"
+                    + "* 바이트제한: title≤87B, content≤389B, cause≤147B, proposal≤147B (UTF-8)\n"
+                    + "\n"
+                    + "## 사실 점검 목록\n"
+                    + "* 점수반영: 낮은 점수→보완, 높은 점수→유지\n"
+                    + "* 태그활용: 상위태그·확률 기반, 확률 70%↑(주요특징), 40~69%(보조특징), 40%↓(언급최소화), 단정 금지·가능성 표현 적용\n"
+                    + "\n"
+                    + "## 반성/자기설명\n"
+                    + "* 이해용이성: 초·중급 눈높이, 전문용어 풀어쓰기\n"
+                    + "* 구체성: 연습법에 횟수, 시간 명시\n"
+                    + "* 금지사항: 이모지, 감탄사, 의성어, 과도한 격려\n"
+                    + "\n"
+                    + "## 인지 검증자\n"
+                    + "* JSON검증: 4개 키 존재, 모든 값은 문자열 타입\n"
+                    + "* 길이검증: 각 필드별 글자수 제한 준수 (초과시 핵심 중심 간결화 재시도)\n"
+                    + "* (초과시)축약규칙: 부사·수식어 → 중복 문구 → 예시 순 제거\n"
+                    + "* 언어검증: 한국어만 사용\n"
+                    + "\n"
+                    + "## 컨텍스트 관리자\n"
+                    + "* 필수입력: 음정·박자·발음·호흡 점수 + 발성태그TOP3(확률%)\n"
+                    + "* 예외처리: 결측값은 해당 항목 언급 생략\n"
+                    + "* 분석기준: 최저점수 항목을 중심으로 원인과 해결책 도출\n"
+                    + "* 출력규칙: 반드시 JSON만 반환, 코드블록·주석·줄바꿈·백틱·설명문·마크다운 금지, 한국어 고정\n"
+                    + "* 준수사항: 위 템플릿·제한·절차 절대 준수, 입력값 외 추론 금지\n" +
+                    "\n"
+                    + "## 입력\n" +
                     "음정 점수: " + request.getPitchAccuracy() + "\n" +
                     "박자 점수: " + request.getBeatAccuracy() + "\n" +
                     "발음 점수: " + pronunciationScore + "\n" +
@@ -400,15 +429,8 @@ class TrainingServiceImpl implements TrainingService {
                     "발성 태그와 예측 확률: " + "\n" +
                     typeList.get(0) + " " + ratioList.get(0) + "\n" +
                     typeList.get(1) + " " + ratioList.get(1) + "\n" +
-                    typeList.get(2) + " " + ratioList.get(2) + "\n" +
-                    "다음은 너의 답변 예시를 알려줄게.\n" +
-                    "\n" +
-                    "{\n" +
-                    "  \"overallReviewTitle\": \"호흡이 큰 장점이지만, 음정과 박자에 안정이 필요해요\",\n" +
-                    "  \"overallReviewContent\": \"호흡 조절은 잘하고 계시지만, 음정과 박자가 불안정하여 노래의 화성 구조를 충분히 표현하지 못하고 있어요. 발성은 중간 정도로 괜찮지만, 정확한 음정과 리듬을 통해 전체적인 완성도를 높일 필요가 있습니다.\",\n" +
-                    "  \"causeContent\": \"코드 변화를 정확히 인지하지 못해 화성 진행에 따른 음의 변화를 자연스럽게 표현하기 어려워요.\",\n" +
-                    "  \"proposalContent\": \"주요 코드(C, F, G)의 느낌을 익히고, 단순한 발성 연습부터 시작해 듣기 훈련을 병행하세요.\"\n" +
-                    "}";
+                    typeList.get(2) + " " + ratioList.get(2) + "\n"
+                    ;
 
             String gptResponse = chatGPTService.askToGpt(userPrompt);
 
@@ -502,39 +524,61 @@ class TrainingServiceImpl implements TrainingService {
             // 호흡 평가
             int breathScore = 60;
 
-            String userPrompt = "사용자의 음정, 박자, 발음, 호흡 점수와 사용자의 발성 유형 예측 결과 가장 확률이 높은 상위 3개 태그와 그 확률을 알려줄게.\n" +
-                    "너는 총평 제목(overallReviewTitle), 총평 내용(overallReviewContent), 총평의 원인(causeContent), 추가적인 제안(proposalContent) 4가지를 알려줘.\n" +
-                    "\n" +
-                    "아래 네 가지 항목을 JSON 형식의 문자열로 답변해줘. 다른 말은 하지 말고 오직 JSON 형식의 문자열 응답만 줘.\n" +
-                    "{\n" +
-                    "  \"overallReviewTitle\": \"\",\n" +
-                    "  \"overallReviewContent\": \"\",\n" +
-                    "  \"causeContent\": \"\",\n" +
-                    "  \"proposalContent\": \"\"\n" +
-                    "}\n" +
-                    "\n" +
-                    "공백, 특수문자 포함 아래 규칙을 지켜줘.\n" +
-                    "overall_review_title: 87Byte 이하\n" +
-                    "overall_review_content: 389Byte 이하\n" +
-                    "cause_content: 147Byte 이하\n" +
-                    "proposal_content: 147Byte 이하\n" +
-                    "\n" +
-                    "음정 점수: " + request.getPitchAccuracy() + "\n" +
-                    "박자 점수: " + request.getBeatAccuracy() + "\n" +
-                    "발음 점수: " + pronunciationScore + "\n" +
-                    "호흡 점수: " + breathScore + "\n" +
-                    "발성 태그와 예측 확률: " + "\n" +
-                    typeList.get(0) + " " + ratioList.get(0) + "\n" +
-                    typeList.get(1) + " " + ratioList.get(1) + "\n" +
-                    typeList.get(2) + " " + ratioList.get(2) + "\n" +
-                    "다음은 너의 답변 예시를 알려줄게.\n" +
-                    "\n" +
-                    "{\n" +
-                    "  \"overallReviewTitle\": \"호흡이 큰 장점이지만, 음정과 박자에 안정이 필요해요\",\n" +
-                    "  \"overallReviewContent\": \"호흡 조절은 잘하고 계시지만, 음정과 박자가 불안정하여 노래의 화성 구조를 충분히 표현하지 못하고 있어요. 발성은 중간 정도로 괜찮지만, 정확한 음정과 리듬을 통해 전체적인 완성도를 높일 필요가 있습니다.\",\n" +
-                    "  \"causeContent\": \"코드 변화를 정확히 인지하지 못해 화성 진행에 따른 음의 변화를 자연스럽게 표현하기 어려워요.\",\n" +
-                    "  \"proposalContent\": \"주요 코드(C, F, G)의 느낌을 익히고, 단순한 발성 연습부터 시작해 듣기 훈련을 병행하세요.\"\n" +
-                    "}";
+            String userPrompt =
+                    "## 페르소나\n"
+                            + "* 역할: 10년차 보컬 트레이닝 전문가\n"
+                            + "* 대상: 음악 이론 기초 지식 미보유 초·중급 학습자\n"
+                            + "* 톤: 친절·간결·구체\n"
+                            + "* 역량: 점수·태그 기반 진단, 즉시 실행 가능한 과제 제안\n"
+                            + "\n"
+                            + "## 레시피/절차 생성\n"
+                            + "* 입력해석: 4개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
+                            + "* 우선순위: 60점 미만 항목 → 60~80점 항목 → 80점 이상 항목 순\n"
+                            + "* 작성순서: 제목(한줄) → 상태요약(1~3문장) → 가능한 원인(가설) → 실행 제안(구체적 행동 지시)\n"
+                            + "\n"
+                            + "## 템플릿\n"
+                            + "* 출력형식: JSON 단일 객체, 키 추가·누락 금지, 값: 문자열\n"
+                            + "* 스키마:\n"
+                            + "{\n"
+                            + "\"overallReviewTitle\": \"\",\n"
+                            + "\"overallReviewContent\": \"\",\n"
+                            + "\"causeContent\": \"\",\n"
+                            + "\"proposalContent\": \"\"\n"
+                            + "}\n"
+                            + "* 바이트제한: title≤87B, content≤389B, cause≤147B, proposal≤147B (UTF-8)\n"
+                            + "\n"
+                            + "## 사실 점검 목록\n"
+                            + "* 점수반영: 낮은 점수→보완, 높은 점수→유지\n"
+                            + "* 태그활용: 상위태그·확률 기반, 확률 70%↑(주요특징), 40~69%(보조특징), 40%↓(언급최소화), 단정 금지·가능성 표현 적용\n"
+                            + "\n"
+                            + "## 반성/자기설명\n"
+                            + "* 이해용이성: 초·중급 눈높이, 전문용어 풀어쓰기\n"
+                            + "* 구체성: 연습법에 횟수, 시간 명시\n"
+                            + "* 금지사항: 이모지, 감탄사, 의성어, 과도한 격려\n"
+                            + "\n"
+                            + "## 인지 검증자\n"
+                            + "* JSON검증: 4개 키 존재, 모든 값은 문자열 타입\n"
+                            + "* 길이검증: 각 필드별 글자수 제한 준수 (초과시 핵심 중심 간결화 재시도)\n"
+                            + "* (초과시)축약규칙: 부사·수식어 → 중복 문구 → 예시 순 제거\n"
+                            + "* 언어검증: 한국어만 사용\n"
+                            + "\n"
+                            + "## 컨텍스트 관리자\n"
+                            + "* 필수입력: 음정·박자·발음·호흡 점수 + 발성태그TOP3(확률%)\n"
+                            + "* 예외처리: 결측값은 해당 항목 언급 생략\n"
+                            + "* 분석기준: 최저점수 항목을 중심으로 원인과 해결책 도출\n"
+                            + "* 출력규칙: 반드시 JSON만 반환, 코드블록·주석·줄바꿈·백틱·설명문·마크다운 금지, 한국어 고정\n"
+                            + "* 준수사항: 위 템플릿·제한·절차 절대 준수, 입력값 외 추론 금지\n" +
+                            "\n"
+                            + "## 입력\n" +
+                            "음정 점수: " + request.getPitchAccuracy() + "\n" +
+                            "박자 점수: " + request.getBeatAccuracy() + "\n" +
+                            "발음 점수: " + pronunciationScore + "\n" +
+                            "호흡 점수: " + breathScore + "\n" +
+                            "발성 태그와 예측 확률: " + "\n" +
+                            typeList.get(0) + " " + ratioList.get(0) + "\n" +
+                            typeList.get(1) + " " + ratioList.get(1) + "\n" +
+                            typeList.get(2) + " " + ratioList.get(2) + "\n"
+                    ;
 
             String gptResponse = chatGPTService.askToGpt(userPrompt);
 
@@ -635,43 +679,65 @@ class TrainingServiceImpl implements TrainingService {
             // 호흡 평가
             int breathScore = 60;
 
-            String userPrompt = "사용자의 보컬 훈련 전과 훈련 후의 각 음정, 박자, 발음, 호흡 점수와 훈련 후 사용자의 발성 유형 예측 결과 가장 확률이 높은 상위 3개 태그와 그 확률을 알려줄게.\n" +
-                    "너는 훈련 후 보컬에 대한 총평 제목(overallReviewTitle), 총평 내용(overallReviewContent), 훈련 전후 차이에 대한 피드백 제목(feedbackTitle), 피드백 내용(feedbackContent) 4가지를 알려줘.\n" +
-                    "\n" +
-                    "아래 네 가지 항목을 JSON 형식의 문자열로 답변해줘. 다른 말은 하지 말고 오직 JSON 형식의 문자열 응답만 줘.\n" +
-                    "{\n" +
-                    "  \"overallReviewTitle\": \"\",\n" +
-                    "  \"overallReviewContent\": \"\",\n" +
-                    "  \"feedbackTitle\": \"\",\n" +
-                    "  \"feedbackContent\": \"\"\n" +
-                    "}\n" +
-                    "\n" +
-                    "공백, 특수문자 포함 아래 규칙을 지켜줘.\n" +
-                    "overall_review_title: 87Byte 이하\n" +
-                    "overall_review_content: 389Byte 이하\n" +
-                    "feedback_title: 87Byte 이하\n" +
-                    "feedback_content: 389Byte 이하\n" +
-                    "\n" +
-                    "훈련 전 음정 점수: " + preReport.getPitchScore() + "\n" +
-                    "훈련 전 박자 점수: " + preReport.getBeatScore() + "\n" +
-                    "훈련 전 발음 점수: " + preReport.getPronunciationScore() + "\n" +
-                    "훈련 전 호흡 점수: " + preReport.getBreathScore() + "\n" +
-                    "훈련 후 음정 점수: " + request.getPitchAccuracy() + "\n" +
-                    "훈련 후 박자 점수: " + request.getBeatAccuracy() + "\n" +
-                    "훈련 후 발음 점수: " + pronunciationScore + "\n" +
-                    "훈련 후 호흡 점수: " + breathScore + "\n" +
-                    "훈련 후 발성 태그와 예측 확률: " + "\n" +
-                    typeList.get(0) + " " + ratioList.get(0) + "\n" +
-                    typeList.get(1) + " " + ratioList.get(1) + "\n" +
-                    typeList.get(2) + " " + ratioList.get(2) + "\n" +
-                    "다음은 너의 답변 예시를 알려줄게.\n" +
-                    "\n" +
-                    "{\n" +
-                    "  \"overallReviewTitle\": \"호흡이 큰 장점이지만, 음정과 박자에 안정이 필요해요\",\n" +
-                    "  \"overallReviewContent\": \"호흡 조절은 잘하고 계시지만, 음정과 박자가 불안정하여 노래의 화성 구조를 충분히 표현하지 못하고 있어요. 발성은 중간 정도로 괜찮지만, 정확한 음정과 리듬을 통해 전체적인 완성도를 높일 필요가 있습니다.\",\n" +
-                    "  \"feedbackTitle\": \"꾸준함의 힘, 눈에 띄는 성장\",\n" +
-                    "  \"feedbackContent\": \"전반적인 퍼포먼스가 크게 향상되었습니다. 훈련 진행률 85%를 달성하였으며, 꾸준한 연습을 통해 더욱 발전할 수 있습니다.\"\n" +
-                    "}";
+            String userPrompt =
+                    "## 페르소나\n"
+                            + "* 역할: 10년차 보컬 트레이닝 전문가\n"
+                            + "* 대상: 음악 이론 기초 지식 미보유 초·중급 학습자\n"
+                            + "* 톤: 친절·간결·구체\n"
+                            + "* 역량: 점수·태그 기반 진단, 즉시 실행 가능한 과제 제안\n"
+                            + "\n"
+                            + "## 레시피/절차 생성\n"
+                            + "* 입력해석: 4개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
+                            + "* 우선순위: 60점 미만 항목 → 60~80점 항목 → 80점 이상 항목 순\n"
+                            + "* 작성순서: 훈련 후 보컬에 대한 총평 제목(한 줄) → 상태요약(1~3문장) → 훈련 전후 차이에 대한 피드백 제목(한 줄) → 피드백 내용(구체적 행동 지시)\n"
+                            + "\n"
+                            + "## 템플릿\n"
+                            + "* 출력형식: JSON 단일 객체, 키 추가·누락 금지, 값: 문자열\n"
+                            + "* 스키마:\n"
+                            + "{\n"
+                            + "\"overallReviewTitle\": \"\",\n"
+                            + "\"overallReviewContent\": \"\",\n"
+                            + "\"feedback_title\": \"\",\n"
+                            + "\"feedback_content\": \"\"\n"
+                            + "}\n"
+                            + "* 바이트제한: title≤87B, content≤389B (UTF-8)\n"
+                            + "\n"
+                            + "## 사실 점검 목록\n"
+                            + "* 점수반영: 낮은 점수→보완, 높은 점수→유지\n"
+                            + "* 태그활용: 상위태그·확률 기반, 확률 70%↑(주요특징), 40~69%(보조특징), 40%↓(언급최소화), 단정 금지·가능성 표현 적용\n"
+                            + "\n"
+                            + "## 반성/자기설명\n"
+                            + "* 이해용이성: 초·중급 눈높이, 전문용어 풀어쓰기\n"
+                            + "* 구체성: 연습법에 횟수, 시간 명시\n"
+                            + "* 금지사항: 이모지, 감탄사, 의성어, 과도한 격려\n"
+                            + "\n"
+                            + "## 인지 검증자\n"
+                            + "* JSON검증: 4개 키 존재, 모든 값은 문자열 타입\n"
+                            + "* 길이검증: 각 필드별 글자수 제한 준수 (초과시 핵심 중심 간결화 재시도)\n"
+                            + "* (초과시)축약규칙: 부사·수식어 → 중복 문구 → 예시 순 제거\n"
+                            + "* 언어검증: 한국어만 사용\n"
+                            + "\n"
+                            + "## 컨텍스트 관리자\n"
+                            + "* 필수입력: 음정·박자·발음·호흡 점수 + 발성태그TOP3(확률%)\n"
+                            + "* 예외처리: 결측값은 해당 항목 언급 생략\n"
+                            + "* 분석기준: 최저점수 항목을 중심으로 원인과 해결책 도출\n"
+                            + "* 출력규칙: 반드시 JSON만 반환, 코드블록·주석·줄바꿈·백틱·설명문·마크다운 금지, 한국어 고정\n"
+                            + "* 준수사항: 위 템플릿·제한·절차 절대 준수, 입력값 외 추론 금지\n" +
+                            "\n"
+                            + "## 입력\n" +
+                            "훈련 전 음정 점수: " + preReport.getPitchScore() + "\n" +
+                            "훈련 전 박자 점수: " + preReport.getBeatScore() + "\n" +
+                            "훈련 전 발음 점수: " + preReport.getPronunciationScore() + "\n" +
+                            "훈련 전 호흡 점수: " + preReport.getBreathScore() + "\n" +
+                            "훈련 후 음정 점수: " + request.getPitchAccuracy() + "\n" +
+                            "훈련 후 박자 점수: " + request.getBeatAccuracy() + "\n" +
+                            "훈련 후 발음 점수: " + pronunciationScore + "\n" +
+                            "훈련 후 호흡 점수: " + breathScore + "\n" +
+                            "훈련 후 발성 태그와 예측 확률: " + "\n" +
+                            typeList.get(0) + " " + ratioList.get(0) + "\n" +
+                            typeList.get(1) + " " + ratioList.get(1) + "\n" +
+                            typeList.get(2) + " " + ratioList.get(2) + "\n"
+                    ;
 
             String gptResponse = chatGPTService.askToGpt(userPrompt);
 
