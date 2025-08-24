@@ -1,4 +1,4 @@
-package com.solit.sync2sing.global.chatgpt.sevice;
+package com.solit.sync2sing.global.chatgpt.service;
 
 import com.solit.sync2sing.global.chatgpt.dto.ChatGPTRequest;
 import com.solit.sync2sing.global.chatgpt.dto.ChatGPTResponse;
@@ -41,7 +41,7 @@ public class ChatGPTService {
         messages.add(userMessage);
 
         ChatGPTRequest chatRequest = new ChatGPTRequest();
-        chatRequest.setModel("gpt-4o");
+        chatRequest.setModel("gpt-4.1-nano");
         chatRequest.setMessages(messages);
 
         ChatGPTResponse chatResponse = webClient.post()

@@ -27,6 +27,8 @@ public enum ResponseCode {
     INVALID_TRAINING_MODE_OR_ANALYSIS_TYPE(HttpStatus.BAD_REQUEST, "트레이닝 모드 또는 분석 타입 요청 값이 유효하지 않습니다."),
     EXTERNAL_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "외부 API 응답 시간 초과. 잠시 후 다시 시도해 주세요."),
     TRANSCRIBE_PARSING_FAILED(HttpStatus.BAD_GATEWAY, "Transcribe 결과 파싱 실패. 다시 시도해 주세요."),
+    TRANSCRIPTION_FAIL(HttpStatus.BAD_GATEWAY, "AWS Transcription 처리 중 오류가 발생했습니다."),
+    AI_VOICE_ANALYSIS_FAIL(HttpStatus.BAD_GATEWAY, "AI 발성 분석 처리 중 오류가 발생했습니다."),
     RECORDING_NOT_FOUND(HttpStatus.NOT_FOUND, "녹음본을 찾을 수 없습니다."),
 
     SOLO_TRAINING_SESSION_FETCHED(HttpStatus.OK, "솔로 트레이닝 세션 정보 조회에 성공했습니다."),
@@ -67,7 +69,7 @@ public enum ResponseCode {
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "잘못된 비밀번호입니다."),
     LOGIN_SUCCESS(HttpStatus.OK, "로그인에 성공했습니다."),
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청입니다."),
-    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다."),
+    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "예상치 못한 예외가 발생했습니다."),
     INVALID_USER_INPUT(HttpStatus.BAD_REQUEST, "요청한 값이 유효하지 않습니다."),
     INVALID_JWT_SIGNATURE(HttpStatus.UNAUTHORIZED, "유효하지 않은 JWT 서명입니다."),
     INVALID_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 JWT 토큰입니다."),
