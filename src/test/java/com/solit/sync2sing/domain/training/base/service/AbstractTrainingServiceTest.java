@@ -139,7 +139,7 @@ public class AbstractTrainingServiceTest {
         CurriculumListResponse cr = dto.getCurriculum();
         assertTrue(cr.getPitch().isEmpty());
         assertTrue(cr.getRhythm().isEmpty());
-        assertTrue(cr.getVocalization().isEmpty());
+        assertTrue(cr.getPronunciation().isEmpty());
         assertTrue(cr.getBreath().isEmpty());
     }
 

@@ -3,12 +3,9 @@ package com.solit.sync2sing.domain.user.controller;
 import com.solit.sync2sing.domain.user.dto.request.LoginRequestDTO;
 import com.solit.sync2sing.domain.user.dto.request.LogoutRequestDTO;
 import com.solit.sync2sing.domain.user.dto.request.SignupRequestDTO;
-import com.solit.sync2sing.domain.user.dto.response.LoginResponseDTO;
-import com.solit.sync2sing.domain.user.dto.response.LogoutResponseDTO;
+import com.solit.sync2sing.domain.user.dto.response.*;
 import com.solit.sync2sing.domain.user.dto.request.UserInfoUpdateRequestDTO;
-import com.solit.sync2sing.domain.user.dto.response.UserInfoUpdateResponseDTO;
 import com.solit.sync2sing.domain.user.service.UserInfoUpdateService;
-import com.solit.sync2sing.domain.user.dto.response.UserInfoResponseDTO;
 import com.solit.sync2sing.domain.user.service.UserLoginService;
 import com.solit.sync2sing.domain.user.service.UserLogoutService;
 import com.solit.sync2sing.domain.user.service.UserSignupService;
@@ -24,6 +21,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/user")
@@ -50,18 +48,18 @@ public class UserController {
     @PostMapping("/signup")
     public ResponseEntity<ResponseDTO> signup(@RequestBody SignupRequestDTO signupRequest) {
         try {
+            SignupResponseDTO response = userSignupService.signUp(signupRequest);
             return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .body(new ResponseDTO(
                             ResponseCode.SIGNUP_SUCCESS,
-                            userSignupService.signUp(signupRequest)
+                            response
                     ));
-        } catch (Exception e) {
+        } catch (ResponseStatusException e) {
+            ResponseCode code = ResponseCode.from(e.getStatusCode(), e.getReason());
             return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(new ResponseDTO(
-                            ResponseCode.DUPLICATE_EMAIL
-                    ));
+                    .status(e.getStatusCode())
+                    .body(new ResponseDTO(code));
         }
     }
     @PostMapping("/login")

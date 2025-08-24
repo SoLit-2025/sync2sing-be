@@ -24,7 +24,7 @@ public class GenerateCurriculumRequest {
     private String rhythm;
 
     @NotNull
-    private String vocalization;
+    private String pronunciation;
 
     @NotNull
     private String breath;
