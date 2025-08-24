@@ -3,6 +3,7 @@ package com.solit.sync2sing.global.response;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 
 /**
  * 공통 응답 코드 정의 enum
@@ -59,8 +60,9 @@ public enum ResponseCode {
     DUET_TRAINING_PROGRESS_UPDATED(HttpStatus.OK, "듀엣 트레이닝 진행 상황 업데이트에 성공했습니다."),
 
     SIGNUP_SUCCESS(HttpStatus.CREATED, "회원가입에 성공했습니다."),
-    DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST, "이미 사용 중인 이메일입니다."),
+    DUPLICATE_USERNAME(HttpStatus.BAD_REQUEST, "이미 사용 중인 아이디입니다."),
     SIGNUP_REQUIRED_FIELDS(HttpStatus.BAD_REQUEST, "이메일, 비밀번호, 닉네임은 필수 항목입니다."),
+    INVALID_USERNAME_FORMAT(HttpStatus.BAD_REQUEST,"아이디는 영문 소문자와 숫자로 6글자 이상 15글자 미만이어야 합니다." ),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "잘못된 비밀번호입니다."),
     LOGIN_SUCCESS(HttpStatus.OK, "로그인에 성공했습니다."),
@@ -85,9 +87,18 @@ public enum ResponseCode {
     SONG_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 곡을 찾을 수 없습니다."),
     EMPTY_FILE_EXCEPTION(HttpStatus.BAD_REQUEST, "파일이 비어 있습니다."),
     FILE_UPLOAD_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "파일을 처리하는 중 오류가 발생했습니다."),
-    FILE_UPLOAD_FAIL_S3_ROLLBACK(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드 실패로 S3 롤백되었습니다."),
-    ;
+    FILE_UPLOAD_FAIL_S3_ROLLBACK(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드 실패로 S3 롤백되었습니다.");
 
     private final HttpStatus status;
     private final String message;
+
+    // 요청한 HttpStatus, 메시지에 맞는 enum 상수를 찾아 반환
+    public static ResponseCode from(HttpStatusCode statusCode, String message) {
+        for (ResponseCode code : ResponseCode.values()) {
+            if (code.getStatus().value() == statusCode.value() && code.getMessage().equals(message)) {
+                return code;
+            }
+        }
+        return INTERNAL_ERROR; // 기본값으로 INTERNAL_ERROR 반환
+    }
 }
