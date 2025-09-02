@@ -85,7 +85,9 @@ public enum ResponseCode {
     USER_INFO_SUCCESS(HttpStatus.OK, "회원 정보 조회 성공"),
 
     ADMIN_SOLOSONG_UPLOADED(HttpStatus.CREATED, "솔로곡 업로드에 성공했습니다."),
-    ADMIN_SOLOSONG_DELETED(HttpStatus.OK, "솔로곡 삭제에 성공했습니다."),
+    ADMIN_DUETSONG_UPLOADED(HttpStatus.CREATED, "듀엣곡 업로드에 성공했습니다."),
+    INVALID_DUET_PART_COUNT(HttpStatus.BAD_REQUEST, "듀엣곡은 고유한 파트 이름을 최대 2개까지만 가질 수 있습니다."),
+    ADMIN_SONG_DELETED(HttpStatus.OK, "곡 삭제에 성공했습니다."),
     SONG_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 곡을 찾을 수 없습니다."),
     EMPTY_FILE_EXCEPTION(HttpStatus.BAD_REQUEST, "파일이 비어 있습니다."),
     FILE_UPLOAD_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "파일을 처리하는 중 오류가 발생했습니다."),
