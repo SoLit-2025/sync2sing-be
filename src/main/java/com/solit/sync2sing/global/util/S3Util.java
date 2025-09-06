@@ -186,7 +186,14 @@ public class S3Util {
         String splitStr = ".com/";
         String fileName = fileUrl.substring(fileUrl.lastIndexOf(splitStr) + splitStr.length());
 
-        amazonS3.deleteObject(bucket, fileName);
+        try {
+            amazonS3.deleteObject(bucket, fileName);
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    ResponseCode.FILE_DELETE_EXCEPTION.getStatus(),
+                    ResponseCode.FILE_DELETE_EXCEPTION.getMessage()
+            );
+        }
     }
 
     public void deletetranscriptFileFromS3(String fileUrl) {

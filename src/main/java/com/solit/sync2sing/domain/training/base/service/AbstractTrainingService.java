@@ -32,6 +32,7 @@ public abstract class AbstractTrainingService {
     private final LyricslineRepository lyricslineRepository;
     private final DuetSongPartRepository duetSongPartRepository;
 
+    @Transactional
     public Optional<SessionDTO> getSession(CustomUserDetails userDetails) {
 
         // 내 세션 조회
@@ -282,6 +283,7 @@ public abstract class AbstractTrainingService {
         trainingSessionRepository.delete(session);
     }
 
+    @Transactional(readOnly = true)
     public SongListDTO getSongList(String type) {
         boolean isMr = "mr".equalsIgnoreCase(type);
         boolean isOriginal = "original".equalsIgnoreCase(type);
@@ -353,6 +355,7 @@ public abstract class AbstractTrainingService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
     public SongListDTO.SongDTO getSong(Long songId, String type) {
         boolean isMr = "mr".equalsIgnoreCase(type);
         boolean isOriginal = "original".equalsIgnoreCase(type);

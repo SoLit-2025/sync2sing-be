@@ -98,8 +98,12 @@ public enum ResponseCode {
     ADMIN_SONG_DELETED(HttpStatus.OK, "곡 삭제에 성공했습니다."),
     SONG_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 곡을 찾을 수 없습니다."),
     EMPTY_FILE_EXCEPTION(HttpStatus.BAD_REQUEST, "파일이 비어 있습니다."),
-    FILE_UPLOAD_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "파일을 처리하는 중 오류가 발생했습니다."),
-    FILE_UPLOAD_FAIL_S3_ROLLBACK(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드 실패로 S3 롤백되었습니다.");
+    FILE_UPLOAD_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "파일을 업로드하는 중 오류가 발생했습니다."),
+    FILE_UPLOAD_FAIL_S3_ROLLBACK(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드 실패로 S3 롤백되었습니다."),
+    FILE_DELETE_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "파일을 삭제하는 중 오류가 발생했습니다."),
+
+
+    ;
 
     private final HttpStatus status;
     private final String message;

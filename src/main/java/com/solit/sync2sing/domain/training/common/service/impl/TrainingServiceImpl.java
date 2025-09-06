@@ -20,6 +20,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -35,6 +37,8 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 @Slf4j
 public class TrainingServiceImpl implements TrainingService {
+
+    private final TransactionTemplate transactionTemplate;
 
     private final S3Util s3Util;
 
@@ -53,6 +57,7 @@ public class TrainingServiceImpl implements TrainingService {
     private final DuetTrainingRoomRepository duetTrainingRoomRepository;
 
     @Override
+    @Transactional
     public CurriculumListResponse generateTrainingCurriculum(
             CustomUserDetails userDetails,
             GenerateCurriculumRequest request
@@ -201,6 +206,7 @@ public class TrainingServiceImpl implements TrainingService {
 
 
     @Override
+    @Transactional
     public SetTrainingProgressResponse setTrainingProgress(
             CustomUserDetails userDetails,
             SetTrainingProgressRequest request,
@@ -263,6 +269,7 @@ public class TrainingServiceImpl implements TrainingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public CurrentTrainingListDTO getCurrentTrainingList(
             CustomUserDetails userDetails
     ) {
@@ -313,7 +320,6 @@ public class TrainingServiceImpl implements TrainingService {
             MultipartFile vocalFile,
             GenerateVocalAnalysisReportRequest request
     ) {
-        TrainingMode mode = TrainingMode.valueOf(request.getTrainingMode());
         RecordingContext type = RecordingContext.valueOf(request.getAnalysisType());
 
         if (type.equals(RecordingContext.GUEST)) {
@@ -483,7 +489,9 @@ public class TrainingServiceImpl implements TrainingService {
                     .proposalContent(proposalContent)
                     .build();
 
-            vocalAnalysisReportRepository.save(vocalAnalysisReport);
+            transactionTemplate.executeWithoutResult(status ->
+                vocalAnalysisReportRepository.save(vocalAnalysisReport)
+            );
 
             return PreVocalAnalysisReportResponse.toDTO(vocalAnalysisReport);
         } catch (ResponseStatusException rse) {
@@ -678,7 +686,9 @@ public class TrainingServiceImpl implements TrainingService {
                     .proposalContent(proposalContent)
                     .build();
 
-            vocalAnalysisReportRepository.save(vocalAnalysisReport);
+            transactionTemplate.executeWithoutResult(status ->
+                    vocalAnalysisReportRepository.save(vocalAnalysisReport)
+            );
 
             if (trainingMode.equals(TrainingMode.SOLO)) {
                 s3Util.deleteFileFromS3(recordingAudioS3Url);
@@ -696,7 +706,9 @@ public class TrainingServiceImpl implements TrainingService {
                         .recordingPhase(RecordingContext.PRE)
                         .build();
 
-                recordingRepository.save(preRecording);
+                transactionTemplate.executeWithoutResult(status ->
+                        recordingRepository.save(preRecording)
+                );
             }
 
             return PreVocalAnalysisReportResponse.toDTO(vocalAnalysisReport);
@@ -903,7 +915,9 @@ public class TrainingServiceImpl implements TrainingService {
                     .preTrainingReport(preReport)
                     .build();
 
-            vocalAnalysisReportRepository.save(vocalAnalysisReport);
+            transactionTemplate.executeWithoutResult(status ->
+                    vocalAnalysisReportRepository.save(vocalAnalysisReport)
+            );
 
             if (trainingMode.equals(TrainingMode.SOLO)) {
                 s3Util.deleteFileFromS3(recordingAudioS3Url);
@@ -921,7 +935,9 @@ public class TrainingServiceImpl implements TrainingService {
                         .recordingPhase(RecordingContext.POST)
                         .build();
 
-                recordingRepository.save(postRecording);
+                transactionTemplate.executeWithoutResult(status ->
+                        recordingRepository.save(postRecording)
+                );
             }
 
             return PostVocalAnalysisReportResponse.toDTO(vocalAnalysisReport);
@@ -1094,7 +1110,9 @@ public class TrainingServiceImpl implements TrainingService {
                     .feedbackContent(feedbackContent)
                     .build();
 
-            vocalAnalysisReportRepository.save(vocalAnalysisReport);
+            transactionTemplate.executeWithoutResult(status ->
+                    vocalAnalysisReportRepository.save(vocalAnalysisReport)
+            );
 
             return DuetMergedVocalAnalysisReportResponse.toDTO(vocalAnalysisReport);
         } catch (ResponseStatusException rse) {
@@ -1114,8 +1132,6 @@ public class TrainingServiceImpl implements TrainingService {
         String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         return date + " " + songTitle;
     }
-
-
 
     public int calculateSimilarityScore(String sttText, String reference) {
         LevenshteinDistance ld = new LevenshteinDistance();

@@ -13,8 +13,8 @@ import com.solit.sync2sing.repository.DuetSongPartRepository;
 import com.solit.sync2sing.repository.LyricslineRepository;
 import com.solit.sync2sing.repository.SongRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -33,6 +33,7 @@ public class AdminSongServiceImpl implements AdminSongService {
     private final DuetSongPartRepository duetSongPartRepository;
 
     @Override
+    @Transactional
     public void adminSoloSongUpload(
             MultipartFile albumCoverImage,
             MultipartFile originalAudio,
@@ -98,6 +99,7 @@ public class AdminSongServiceImpl implements AdminSongService {
     }
 
     @Override
+    @Transactional
     public void adminDuetSongUpload(
             MultipartFile albumCoverImage,
             MultipartFile originalAudio,
@@ -196,17 +198,17 @@ public class AdminSongServiceImpl implements AdminSongService {
 
 
     @Override
+    @Transactional
     public void adminSongDelete(AdminSongDeleteRequest request) {
         Song song = songRepository.findById(request.getSongId())
                 .orElseThrow(() -> new ResponseStatusException(
                         ResponseCode.SONG_NOT_FOUND.getStatus(),
                         ResponseCode.SONG_NOT_FOUND.getMessage()
                 ));
+        songRepository.delete(song);
 
         s3Util.deleteFileFromS3(song.getOriginalAudioFile().getFileUrl());
         s3Util.deleteFileFromS3(song.getMrAudioFile().getFileUrl());
         s3Util.deleteFileFromS3(song.getAlbumCoverFile().getFileUrl());
-
-        songRepository.delete(song);
     }
 }

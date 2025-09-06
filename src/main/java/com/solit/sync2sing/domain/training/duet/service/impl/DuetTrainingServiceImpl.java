@@ -16,6 +16,7 @@ import com.solit.sync2sing.global.util.FfmpegAudioMerger;
 import com.solit.sync2sing.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Path;
@@ -23,6 +24,8 @@ import java.util.List;
 
 @Service
 public class DuetTrainingServiceImpl extends AbstractTrainingService implements DuetTrainingService {
+
+    private final TransactionTemplate transactionTemplate;
 
     private final TrainingServiceImpl trainingServiceImpl;
 
@@ -36,6 +39,7 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
     private final VocalAnalysisReportRepository vocalAnalysisReportRepository;
 
     public DuetTrainingServiceImpl(
+            TransactionTemplate transactionTemplate,
             TrainingSessionRepository trainingSessionRepository,
             TrainingSessionTrainingRepository trainingSessionTrainingRepository,
             RecordingRepository recordingRepository,
@@ -59,6 +63,7 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
                 duetSongPartRepository
         );
 
+        this.transactionTemplate = transactionTemplate;
         this.duetRoomApplicationRepository = duetRoomApplicationRepository;
         this.duetTrainingRoomRepository = duetTrainingRoomRepository;
         this.duetSongPartRepository = duetSongPartRepository;
@@ -71,6 +76,7 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
     }
 
     @Override
+    @Transactional(readOnly = true)
     public SentPartnerApplicationListResponse getSentPartnerApplications(CustomUserDetails userDetails) {
         List<DuetRoomApplication> duetRoomApplicationList = duetRoomApplicationRepository.findByApplicantUser(userDetails.getUser());
 
@@ -87,6 +93,7 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
     }
 
     @Override
+    @Transactional(readOnly = true)
     public DuetTrainingRoomListResponse getRoomList() {
         List<DuetTrainingRoom> rooms =
                 duetTrainingRoomRepository.findAllByStatusOrderByCreatedAtDesc(
@@ -121,6 +128,7 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
     }
 
     @Override
+    @Transactional
     public DuetTrainingRoomListResponse.DuetTrainingRoomDto createRoom(CustomUserDetails userDetails, CreateRoomRequest request) {
         int days = request.getTrainingDays();
         if (days != 3 && days != 7 && days != 14) {
@@ -183,8 +191,8 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
                 .build();
     }
 
-    @Transactional
     @Override
+    @Transactional
     public void deleteRoom(Long roomId) {
         DuetTrainingRoom room = duetTrainingRoomRepository.findById(roomId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -204,6 +212,7 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ReceivedPartnerApplicationListResponse getReceivedPartnerApplications(CustomUserDetails userDetails, Long roomId) {
         List<DuetRoomApplication> duetRoomApplicationList = duetRoomApplicationRepository.findByDuetTrainingRoomId(roomId);
 
@@ -221,6 +230,7 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
     }
 
     @Override
+    @Transactional
     public SentPartnerApplicationListResponse.ApplicationDTO createDuetRoomApplication(CustomUserDetails userDetails, Long roomId) {
         DuetTrainingRoom room = duetTrainingRoomRepository.findById(roomId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -318,6 +328,7 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
     }
 
     @Override
+    @Transactional
     public void deletePartnerApplication(CustomUserDetails userDetails, Long roomId, Long applicationId) {
         DuetRoomApplication duetRoomApplication = duetRoomApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -384,13 +395,15 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
                                 ResponseCode.VOCAL_ANALYSIS_REPORT_NOT_FOUND.getMessage()
                         ));
 
-        recordingRepository.save(Recording.builder()
-                .audioFile(mergedAudioFile)
-                .trainingSession(hostSession) // 또는 별도의 "합성 결과" 용 세션/필드
-                .vocalAnalysisReport(mergedVocalAnalysisReport)
-                .recordingFormat(RecordingFormat.MERGED)
-                .recordingPhase(phase)
-                .build());
+        transactionTemplate.executeWithoutResult(status ->
+            recordingRepository.save(Recording.builder()
+                    .audioFile(mergedAudioFile)
+                    .trainingSession(hostSession)
+                    .vocalAnalysisReport(mergedVocalAnalysisReport)
+                    .recordingFormat(RecordingFormat.MERGED)
+                    .recordingPhase(phase)
+                    .build())
+        );
 
         return AudioMergeResponse.builder()
                 .roomId(room.getId())
