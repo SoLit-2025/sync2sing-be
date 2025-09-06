@@ -77,7 +77,7 @@ public enum ResponseCode {
     LOGIN_SUCCESS(HttpStatus.OK, "로그인에 성공했습니다."),
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청입니다."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "예상치 못한 예외가 발생했습니다."),
-    INVALID_USER_INPUT(HttpStatus.BAD_REQUEST, "요청한 값이 유효하지 않습니다."),
+    INVALID_USER_INPUT(HttpStatus.BAD_REQUEST, "잘못된 요청 값입니다."),
     INVALID_JWT_SIGNATURE(HttpStatus.UNAUTHORIZED, "유효하지 않은 JWT 서명입니다."),
     INVALID_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 JWT 토큰입니다."),
     EXPIRED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "만료된 JWT 토큰입니다."),

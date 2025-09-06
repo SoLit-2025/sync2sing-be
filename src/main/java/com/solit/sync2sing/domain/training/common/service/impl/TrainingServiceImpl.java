@@ -218,6 +218,14 @@ public class TrainingServiceImpl implements TrainingService {
             SetTrainingProgressRequest request,
             Long sessionId,
             Long trainingId) {
+
+        if (request.getProgress() < 0 ||  request.getProgress() > 100) {
+            throw new ResponseStatusException(
+                    ResponseCode.INVALID_USER_INPUT.getStatus(),
+                    ResponseCode.INVALID_USER_INPUT.getMessage()
+            );
+        }
+
         TrainingSession session = trainingSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResponseStatusException(
                         ResponseCode.TRAINING_SESSION_NOT_FOUND.getStatus(),
