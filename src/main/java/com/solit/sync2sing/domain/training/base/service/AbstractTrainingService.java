@@ -6,7 +6,6 @@ import com.solit.sync2sing.domain.training.common.dto.TrainingDTO;
 import com.solit.sync2sing.domain.training.duet.dto.DuetTrainingRoomListResponse;
 import com.solit.sync2sing.entity.*;
 import com.solit.sync2sing.global.response.ResponseCode;
-import com.solit.sync2sing.global.security.CustomUserDetails;
 import com.solit.sync2sing.global.type.*;
 import com.solit.sync2sing.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +23,7 @@ public abstract class AbstractTrainingService {
 
     private final TrainingMode trainingMode;
 
+    private final UserRepository userRepository;
     private final TrainingSessionRepository trainingSessionRepository;
     private final TrainingSessionTrainingRepository trainingSessionTrainingRepository;
     private final RecordingRepository recordingRepository;
@@ -33,12 +33,17 @@ public abstract class AbstractTrainingService {
     private final DuetSongPartRepository duetSongPartRepository;
 
     @Transactional
-    public Optional<SessionDTO> getSession(CustomUserDetails userDetails) {
+    public Optional<SessionDTO> getSession(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        ResponseCode.USER_NOT_FOUND.getStatus(),
+                        ResponseCode.USER_NOT_FOUND.getMessage()
+                ));
 
         // 내 세션 조회
         TrainingSession mySession;
         Optional<TrainingSession> mySessionOpt = trainingSessionRepository
-                .findByUser(userDetails.getUser()).stream()
+                .findByUserId(userId).stream()
                 .filter(s -> s.getTrainingMode() == trainingMode)
                 .findFirst();
 
@@ -98,8 +103,8 @@ public abstract class AbstractTrainingService {
 
 
             if (LocalDate.now().isAfter(ChronoLocalDate.from(preDue)) && preRec.isEmpty()) {
-                userDetails.getUser().setDuetPenaltyCount(userDetails.getUser().getDuetPenaltyCount() + 1);
-                userDetails.getUser().setDuetPenaltyUntil(LocalDate.now().plusDays(3).atStartOfDay());
+                user.setDuetPenaltyCount(user.getDuetPenaltyCount() + 1);
+                user.setDuetPenaltyUntil(LocalDate.now().plusDays(3).atStartOfDay());
 
                 deleteRoom(room.getId());
 
@@ -107,8 +112,8 @@ public abstract class AbstractTrainingService {
             }
 
             if (LocalDate.now().isAfter(ChronoLocalDate.from(postDue)) && postRecOpt.isEmpty()) {
-                userDetails.getUser().setDuetPenaltyCount(userDetails.getUser().getDuetPenaltyCount() + 1);
-                userDetails.getUser().setDuetPenaltyUntil(LocalDate.now().plusDays(3).atStartOfDay());
+                user.setDuetPenaltyCount(user.getDuetPenaltyCount() + 1);
+                user.setDuetPenaltyUntil(LocalDate.now().plusDays(3).atStartOfDay());
 
                 deleteRoom(room.getId());
 
@@ -211,7 +216,7 @@ public abstract class AbstractTrainingService {
     }
 
     @Transactional
-    public SessionDTO createSession(User user, CreateSessionRequest request) {
+    public SessionDTO createSession(Long userId, CreateSessionRequest request) {
         // trainingDays 유효성 검사 (3, 7, 14만 허용)
         int days = request.getTrainingDays();
         if (days != 3 && days != 7 && days != 14) {
@@ -220,6 +225,12 @@ public abstract class AbstractTrainingService {
                     ResponseCode.INVALID_CURRICULUM_DAYS.getMessage()
             );
         }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        ResponseCode.USER_NOT_FOUND.getStatus(),
+                        ResponseCode.USER_NOT_FOUND.getMessage()
+                ));
 
         // 1) 요청한 Song 조회
         Song song = songRepository.findById(request.getSongId())
@@ -267,9 +278,9 @@ public abstract class AbstractTrainingService {
     }
 
     @Transactional
-    public void deleteSession(CustomUserDetails userDetails) {
+    public void deleteSession(Long userId) {
         // 1) 현재 사용자·모드에 해당하는 세션 조회
-        TrainingSession session = trainingSessionRepository.findByUser(userDetails.getUser()).stream()
+        TrainingSession session = trainingSessionRepository.findByUserId(userId).stream()
                 .filter(s -> s.getTrainingMode() == trainingMode)
                 .findFirst()
                 .orElseThrow(() ->

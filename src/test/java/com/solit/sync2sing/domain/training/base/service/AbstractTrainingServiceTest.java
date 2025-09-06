@@ -111,7 +111,7 @@ public class AbstractTrainingServiceTest {
                 .thenReturn(Collections.emptyList());
 
         // 5) 세션 리포지토리
-        when(trainingSessionRepository.findByUser(user))
+        when(trainingSessionRepository.findByUserId(user.getId()))
                 .thenReturn(List.of(session));
 
         // --- 실행 (when) ---
@@ -198,7 +198,7 @@ public class AbstractTrainingServiceTest {
                 .thenReturn(Collections.emptyList());
 
         // 6) 세션 리포지토리
-        when(trainingSessionRepository.findByUser(user))
+        when(trainingSessionRepository.findByUserId(user.getId()))
                 .thenReturn(List.of(session));
 
         // --- 실행 (when) ---

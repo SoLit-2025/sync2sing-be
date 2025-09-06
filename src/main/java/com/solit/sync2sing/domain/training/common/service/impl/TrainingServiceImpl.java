@@ -10,7 +10,6 @@ import com.solit.sync2sing.global.chatgpt.dto.PostResponse;
 import com.solit.sync2sing.global.chatgpt.dto.PreResponse;
 import com.solit.sync2sing.global.chatgpt.service.ChatGPTService;
 import com.solit.sync2sing.global.response.ResponseCode;
-import com.solit.sync2sing.global.security.CustomUserDetails;
 import com.solit.sync2sing.global.type.*;
 import com.solit.sync2sing.global.util.MeasureTime;
 import com.solit.sync2sing.global.util.S3Util;
@@ -46,6 +45,7 @@ public class TrainingServiceImpl implements TrainingService {
     private final AiService aiService;
     private final ChatGPTService chatGPTService;
 
+    private final UserRepository userRepository;
     private final TrainingRepository trainingRepository;
     private final TrainingSessionRepository trainingSessionRepository;
     private final TrainingSessionTrainingRepository trainingSessionTrainingRepository;
@@ -59,7 +59,7 @@ public class TrainingServiceImpl implements TrainingService {
     @Override
     @Transactional
     public CurriculumListResponse generateTrainingCurriculum(
-            CustomUserDetails userDetails,
+            Long userId,
             GenerateCurriculumRequest request
     ) {
         // 1) days → count
@@ -74,7 +74,7 @@ public class TrainingServiceImpl implements TrainingService {
         };
 
         // 2) 사용자 세션 조회
-        TrainingSession session = trainingSessionRepository.findByUser(userDetails.getUser()).stream()
+        TrainingSession session = trainingSessionRepository.findByUserId(userId).stream()
                 .filter(s -> s.getTrainingMode().name().equals(request.getTrainingMode()))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(
@@ -84,7 +84,7 @@ public class TrainingServiceImpl implements TrainingService {
 
         // 3) 기존 UserTrainingLog 전체 조회 → Map<trainingId, UserTrainingLog>
         List<UserTrainingLog> existingLogs =
-                userTrainingLogRepository.findByUser(userDetails.getUser());
+                userTrainingLogRepository.findByUserId(userId);
         Map<Long, UserTrainingLog> logMap = existingLogs.stream()
                 .collect(Collectors.toMap(
                         log -> log.getTraining().getId(),
@@ -113,8 +113,14 @@ public class TrainingServiceImpl implements TrainingService {
                         log.setTrainingCount(log.getTrainingCount() + 1);
                     } else {
                         // 새로 추천된 훈련은 count=1
+                        User user = userRepository.findById(userId)
+                                .orElseThrow(() -> new ResponseStatusException(
+                                        ResponseCode.USER_NOT_FOUND.getStatus(),
+                                        ResponseCode.USER_NOT_FOUND.getMessage()
+                                ));
+
                         log = UserTrainingLog.builder()
-                                .user(userDetails.getUser())
+                                .user(user)
                                 .training(
                                         trainingRepository.findById(dto.getId())
                                                 .orElseThrow(() -> new ResponseStatusException(
@@ -208,7 +214,7 @@ public class TrainingServiceImpl implements TrainingService {
     @Override
     @Transactional
     public SetTrainingProgressResponse setTrainingProgress(
-            CustomUserDetails userDetails,
+            Long userId,
             SetTrainingProgressRequest request,
             Long sessionId,
             Long trainingId) {
@@ -271,12 +277,12 @@ public class TrainingServiceImpl implements TrainingService {
     @Override
     @Transactional(readOnly = true)
     public CurrentTrainingListDTO getCurrentTrainingList(
-            CustomUserDetails userDetails
+            Long userId
     ) {
         CurrentTrainingListDTO result = new CurrentTrainingListDTO();
 
         List<TrainingSession> inProgressSessions =
-                trainingSessionRepository.findByUserIdAndStatus(userDetails.getId(),
+                trainingSessionRepository.findByUserIdAndStatus(userId,
                         SessionStatus.TRAINING_IN_PROGRESS);
 
         if (inProgressSessions.isEmpty()) {
@@ -316,7 +322,7 @@ public class TrainingServiceImpl implements TrainingService {
 
     @Override
     public GenerateVocalAnalysisReportResponse generateVocalAnalysisReport(
-            CustomUserDetails userDetails,
+            Long userId,
             MultipartFile vocalFile,
             GenerateVocalAnalysisReportRequest request
     ) {
@@ -325,9 +331,9 @@ public class TrainingServiceImpl implements TrainingService {
         if (type.equals(RecordingContext.GUEST)) {
             return guestAnalysis(vocalFile, request);
         } else if (type.equals(RecordingContext.PRE)) {
-            return preAnalysis(vocalFile, request, userDetails);
+            return preAnalysis(vocalFile, request, userId);
         } else if (type.equals(RecordingContext.POST)) {
-            return postAnalysis(vocalFile, request, userDetails);
+            return postAnalysis(vocalFile, request, userId);
         } else {
             throw new ResponseStatusException(
                     ResponseCode.INVALID_TRAINING_MODE_OR_ANALYSIS_TYPE.getStatus(),
@@ -514,12 +520,12 @@ public class TrainingServiceImpl implements TrainingService {
     private PreVocalAnalysisReportResponse preAnalysis(
             MultipartFile vocalFile,
             GenerateVocalAnalysisReportRequest request,
-            CustomUserDetails userDetails
+            Long userId
     ) {
         TrainingMode trainingMode = TrainingMode.valueOf(request.getTrainingMode());
 
         // 사용자 세션 곡 조회
-        TrainingSession session = trainingSessionRepository.findByUser(userDetails.getUser()).stream()
+        TrainingSession session = trainingSessionRepository.findByUserId(userId).stream()
                 .filter(s -> s.getTrainingMode().equals(trainingMode))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(
@@ -671,8 +677,14 @@ public class TrainingServiceImpl implements TrainingService {
             String causeContent = preResponse.getCauseContent();
             String proposalContent = preResponse.getProposalContent();
 
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            ResponseCode.USER_NOT_FOUND.getStatus(),
+                            ResponseCode.USER_NOT_FOUND.getMessage()
+                    ));
+
             VocalAnalysisReport vocalAnalysisReport = VocalAnalysisReport.builder()
-                    .user(userDetails.getUser())
+                    .user(user)
                     .song(trainingSong)
                     .title(vocalAnalysisReportTitle(trainingSong.getTitle()))
                     .trainingMode(trainingMode)
@@ -732,12 +744,12 @@ public class TrainingServiceImpl implements TrainingService {
     private GenerateVocalAnalysisReportResponse postAnalysis(
             MultipartFile vocalFile,
             GenerateVocalAnalysisReportRequest request,
-            CustomUserDetails userDetails
+            Long userId
     ) {
         TrainingMode trainingMode = TrainingMode.valueOf(request.getTrainingMode());
 
         // 사용자 세션 곡 조회
-        TrainingSession session = trainingSessionRepository.findByUser(userDetails.getUser()).stream()
+        TrainingSession session = trainingSessionRepository.findByUserId(userId).stream()
                 .filter(s -> s.getTrainingMode().equals(trainingMode))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(
@@ -899,8 +911,14 @@ public class TrainingServiceImpl implements TrainingService {
             String feedbackTitle = postResponse.getFeedbackTitle();
             String feedbackContent = postResponse.getFeedbackContent();
 
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            ResponseCode.USER_NOT_FOUND.getStatus(),
+                            ResponseCode.USER_NOT_FOUND.getMessage()
+                    ));
+
             VocalAnalysisReport vocalAnalysisReport = VocalAnalysisReport.builder()
-                    .user(userDetails.getUser())
+                    .user(user)
                     .song(trainingSong)
                     .title(vocalAnalysisReportTitle(trainingSong.getTitle()))
                     .trainingMode(trainingMode)
@@ -961,12 +979,12 @@ public class TrainingServiceImpl implements TrainingService {
     public GenerateVocalAnalysisReportResponse duetMergedAnalysis(
             String recordingAudioS3Url,
             GenerateVocalAnalysisReportRequest request,
-            CustomUserDetails userDetails
+            Long userId
     ) {
         TrainingMode trainingMode = TrainingMode.DUET;
 
         // 사용자 세션 곡 조회
-        TrainingSession session = trainingSessionRepository.findByUser(userDetails.getUser()).stream()
+        TrainingSession session = trainingSessionRepository.findByUserId(userId).stream()
                 .filter(s -> s.getTrainingMode().equals(trainingMode))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(
@@ -1095,8 +1113,14 @@ public class TrainingServiceImpl implements TrainingService {
             String feedbackTitle = postResponse.getFeedbackTitle();
             String feedbackContent = postResponse.getFeedbackContent();
 
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            ResponseCode.USER_NOT_FOUND.getStatus(),
+                            ResponseCode.USER_NOT_FOUND.getMessage()
+                    ));
+
             VocalAnalysisReport vocalAnalysisReport = VocalAnalysisReport.builder()
-                    .user(userDetails.getUser())
+                    .user(user)
                     .song(trainingSong)
                     .title(vocalAnalysisReportTitle(trainingSong.getTitle()))
                     .trainingMode(trainingMode)

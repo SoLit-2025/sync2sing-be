@@ -30,7 +30,7 @@ public class SoloTrainingController {
     public ResponseEntity<ResponseDTO> getSession(
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Optional<SessionDTO> sessionDTOOpt = soloTrainingService.getSession(userDetails);
+        Optional<SessionDTO> sessionDTOOpt = soloTrainingService.getSession(userDetails.getId());
 
         if (sessionDTOOpt.isEmpty()) {
             return ResponseEntity
@@ -66,7 +66,7 @@ public class SoloTrainingController {
     public ResponseEntity<ResponseDTO> deleteSession(
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        soloTrainingService.deleteSession(userDetails);
+        soloTrainingService.deleteSession(userDetails.getId());
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(new ResponseDTO(

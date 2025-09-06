@@ -33,7 +33,7 @@ public class DuetTrainingController {
                 .status(HttpStatus.OK)
                 .body(new ResponseDTO(
                         ResponseCode.SENT_PARTNER_APPLICATIONS_FETCHED,
-                        duetTrainingService.getSentPartnerApplications(userDetails)
+                        duetTrainingService.getSentPartnerApplications(userDetails.getId())
                 ));
     }
 
@@ -56,7 +56,7 @@ public class DuetTrainingController {
                 .status(HttpStatus.CREATED)
                 .body(new ResponseDTO(
                         ResponseCode.DUET_TRAINING_ROOM_CREATED,
-                        duetTrainingService.createRoom(userDetails, request)
+                        duetTrainingService.createRoom(userDetails.getId(), request)
                 ));
     }
 
@@ -83,7 +83,7 @@ public class DuetTrainingController {
                 .status(HttpStatus.OK)
                 .body(new ResponseDTO(
                         ResponseCode.RECEIVED_PARTNER_APPLICATIONS_FETCHED,
-                        duetTrainingService.getReceivedPartnerApplications(userDetails, roomId)
+                        duetTrainingService.getReceivedPartnerApplications(userDetails.getId(), roomId)
                 ));
     }
 
@@ -96,7 +96,7 @@ public class DuetTrainingController {
                 .status(HttpStatus.CREATED)
                 .body(new ResponseDTO(
                         ResponseCode.PARTNER_APPLICATION_CREATED,
-                        duetTrainingService.createDuetRoomApplication(userDetails, roomId)
+                        duetTrainingService.createDuetRoomApplication(userDetails.getId(), roomId)
                 ));
     }
 
@@ -110,7 +110,7 @@ public class DuetTrainingController {
                 .status(HttpStatus.CREATED)
                 .body(new ResponseDTO(
                         ResponseCode.PARTNER_APPLICATION_ACCEPTED,
-                        duetTrainingService.acceptPartnerApplicationAndCreateSession(userDetails, roomId, applicationId)
+                        duetTrainingService.acceptPartnerApplicationAndCreateSession(userDetails.getId(), roomId, applicationId)
                 ));
     }
 
@@ -120,7 +120,7 @@ public class DuetTrainingController {
             @PathVariable Long roomId,
             @PathVariable Long applicationId
     ) {
-        duetTrainingService.deletePartnerApplication(userDetails, roomId, applicationId);
+        duetTrainingService.deletePartnerApplication(userDetails.getId(), roomId, applicationId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -138,7 +138,7 @@ public class DuetTrainingController {
                 .status(HttpStatus.CREATED)
                 .body(new ResponseDTO(
                         ResponseCode.DUET_AUDIO_MERGED,
-                        duetTrainingService.mergeAudios(userDetails, roomId)
+                        duetTrainingService.mergeAudios(userDetails.getId(), roomId)
                 ));
     }
 
@@ -146,7 +146,7 @@ public class DuetTrainingController {
     public ResponseEntity<ResponseDTO> getSession(
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Optional<SessionDTO> sessionDTOOpt = duetTrainingService.getSession(userDetails);
+        Optional<SessionDTO> sessionDTOOpt = duetTrainingService.getSession(userDetails.getId());
 
         if (sessionDTOOpt.isEmpty()) {
             return ResponseEntity
@@ -169,7 +169,7 @@ public class DuetTrainingController {
     public ResponseEntity<ResponseDTO> deleteSession(
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        duetTrainingService.deleteSession(userDetails);
+        duetTrainingService.deleteSession(userDetails.getId());
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(new ResponseDTO(

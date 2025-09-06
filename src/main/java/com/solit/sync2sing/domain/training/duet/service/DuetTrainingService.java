@@ -2,36 +2,34 @@ package com.solit.sync2sing.domain.training.duet.service;
 
 import com.solit.sync2sing.domain.training.base.dto.*;
 import com.solit.sync2sing.domain.training.duet.dto.*;
-import com.solit.sync2sing.entity.User;
-import com.solit.sync2sing.global.security.CustomUserDetails;
 
 import java.util.Optional;
 
 public interface DuetTrainingService {
 
-    SentPartnerApplicationListResponse getSentPartnerApplications(CustomUserDetails userDetails);
+    SentPartnerApplicationListResponse getSentPartnerApplications(Long userId);
 
     DuetTrainingRoomListResponse getRoomList();
 
-    DuetTrainingRoomListResponse.DuetTrainingRoomDto createRoom(CustomUserDetails userDetails, CreateRoomRequest request);
+    DuetTrainingRoomListResponse.DuetTrainingRoomDto createRoom(Long userId, CreateRoomRequest request);
 
     void deleteRoom(Long roomId);
 
-    ReceivedPartnerApplicationListResponse getReceivedPartnerApplications(CustomUserDetails userDetails, Long roomId);
+    ReceivedPartnerApplicationListResponse getReceivedPartnerApplications(Long userId, Long roomId);
 
-    SentPartnerApplicationListResponse.ApplicationDTO createDuetRoomApplication(CustomUserDetails userDetails, Long roomId);
+    SentPartnerApplicationListResponse.ApplicationDTO createDuetRoomApplication(Long userId, Long roomId);
 
-    AcceptPartnerApplicationAndCreateSessionResponse acceptPartnerApplicationAndCreateSession(CustomUserDetails userDetails, Long roomId, Long applicationId);
+    AcceptPartnerApplicationAndCreateSessionResponse acceptPartnerApplicationAndCreateSession(Long userId, Long roomId, Long applicationId);
 
-    SessionDTO createSession(User user, CreateSessionRequest createSessionRequest);
+    SessionDTO createSession(Long userId, CreateSessionRequest createSessionRequest);
 
-    void deletePartnerApplication(CustomUserDetails userDetails, Long roomId, Long applicationId);
+    void deletePartnerApplication(Long userId, Long roomId, Long applicationId);
 
-    AudioMergeResponse mergeAudios(CustomUserDetails userDetails, Long roomId);
+    AudioMergeResponse mergeAudios(Long userId, Long roomId);
 
-    Optional<SessionDTO> getSession(CustomUserDetails userDetails);
+    Optional<SessionDTO> getSession(Long userId);
 
-    void deleteSession(CustomUserDetails userDetails);
+    void deleteSession(Long userId);
 
     SongListDTO getSongList(String type);
 
