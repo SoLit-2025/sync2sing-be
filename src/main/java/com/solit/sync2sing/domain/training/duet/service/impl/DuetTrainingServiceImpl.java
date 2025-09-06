@@ -12,6 +12,7 @@ import com.solit.sync2sing.entity.*;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.type.*;
 import com.solit.sync2sing.global.util.FfmpegAudioMerger;
+import com.solit.sync2sing.global.util.S3Util;
 import com.solit.sync2sing.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,11 +21,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class DuetTrainingServiceImpl extends AbstractTrainingService implements DuetTrainingService {
 
     private final TransactionTemplate transactionTemplate;
+
+    private final S3Util s3Util;
 
     private final TrainingServiceImpl trainingServiceImpl;
 
@@ -40,6 +44,7 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
 
     public DuetTrainingServiceImpl(
             TransactionTemplate transactionTemplate,
+            S3Util s3Util,
             UserRepository userRepository,
             TrainingSessionRepository trainingSessionRepository,
             TrainingSessionTrainingRepository trainingSessionTrainingRepository,
@@ -66,6 +71,7 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
         );
 
         this.transactionTemplate = transactionTemplate;
+        this.s3Util = s3Util;
         this.userRepository = userRepository;
         this.duetRoomApplicationRepository = duetRoomApplicationRepository;
         this.duetTrainingRoomRepository = duetTrainingRoomRepository;
@@ -213,9 +219,21 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
         duetTrainingRoomRepository.flush();
 
         if (room.getHostTrainingSession() != null) {
+            recordingRepository.findByTrainingSession(room.getHostTrainingSession())
+                    .stream()
+                    .map(Recording::getAudioFile)
+                    .map(AudioFile::getFileUrl)
+                    .forEach(s3Util::deleteFileFromS3);
+
             trainingSessionRepository.delete(room.getHostTrainingSession());
         }
         if (room.getPartnerTrainingSession() != null) {
+            recordingRepository.findByTrainingSession(room.getPartnerTrainingSession())
+                    .stream()
+                    .map(Recording::getAudioFile)
+                    .map(AudioFile::getFileUrl)
+                    .forEach(s3Util::deleteFileFromS3);
+
             trainingSessionRepository.delete(room.getPartnerTrainingSession());
         }
     }
