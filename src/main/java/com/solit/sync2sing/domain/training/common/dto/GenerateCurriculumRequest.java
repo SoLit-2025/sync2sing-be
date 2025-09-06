@@ -26,9 +26,6 @@ public class GenerateCurriculumRequest {
     @NotNull
     private String pronunciation;
 
-    @NotNull
-    private String breath;
-
     @Min(3)
     @Max(14)
     private int trainingDays;

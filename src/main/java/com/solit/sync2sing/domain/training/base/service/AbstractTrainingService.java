@@ -131,13 +131,11 @@ public abstract class AbstractTrainingService {
         List<TrainingDTO> pitchList  = new ArrayList<>(curriculumMap.get(TrainingCategory.PITCH));
         List<TrainingDTO> rhythmList = new ArrayList<>(curriculumMap.get(TrainingCategory.RHYTHM));
         List<TrainingDTO> vocalList  = new ArrayList<>(curriculumMap.get(TrainingCategory.PRONUNCIATION));
-        List<TrainingDTO> breathList = new ArrayList<>(curriculumMap.get(TrainingCategory.BREATH));
 
         CurriculumListResponse curriculum = CurriculumListResponse.builder()
                 .pitch(pitchList)
                 .rhythm(rhythmList)
                 .pronunciation(vocalList)
-                .breath(breathList)
                 .build();
 
         // 6) SessionDTO 빌드 (DUET인 경우 dueDate 추가)

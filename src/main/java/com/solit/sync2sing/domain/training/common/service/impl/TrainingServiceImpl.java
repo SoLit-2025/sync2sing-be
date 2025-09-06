@@ -94,13 +94,10 @@ class TrainingServiceImpl implements TrainingService {
         List<TrainingDTO> vocalList  = pickTrainings(TrainingCategory.PRONUNCIATION,
                 TrainingGrade.valueOf(request.getPronunciation()),
                 trainingCountPerCategory, logMap);
-        List<TrainingDTO> breathList = pickTrainings(TrainingCategory.BREATH,
-                TrainingGrade.valueOf(request.getBreath()),
-                trainingCountPerCategory, logMap);
 
         // 5) UserTrainingLog 업데이트 및 저장
         List<UserTrainingLog> logsToSave = new ArrayList<>();
-        Stream.of(pitchList, rhythmList, vocalList, breathList)
+        Stream.of(pitchList, rhythmList, vocalList)
                 .flatMap(List::stream)
                 .forEach(dto -> {
                     UserTrainingLog log = logMap.get(dto.getId());
@@ -130,7 +127,6 @@ class TrainingServiceImpl implements TrainingService {
         toSave.addAll(buildSessionMappings(session, pitchList));
         toSave.addAll(buildSessionMappings(session, rhythmList));
         toSave.addAll(buildSessionMappings(session, vocalList));
-        toSave.addAll(buildSessionMappings(session, breathList));
         trainingSessionTrainingRepository.saveAll(toSave);
 
         // 7) 세션 상태 TRAINING_IN_PROGRESS로 변경
@@ -142,7 +138,6 @@ class TrainingServiceImpl implements TrainingService {
                 .pitch(pitchList)
                 .rhythm(rhythmList)
                 .pronunciation(vocalList)
-                .breath(breathList)
                 .build();
     }
 
@@ -400,9 +395,6 @@ class TrainingServiceImpl implements TrainingService {
 
             int pronunciationScore = calculateSimilarityScore(transcriptText, lyricText);
 
-            // 호흡 평가
-            int breathScore = 60;
-
             String userPrompt =
                     "## 페르소나\n"
                     + "* 역할: 10년차 보컬 트레이닝 전문가\n"
@@ -411,7 +403,7 @@ class TrainingServiceImpl implements TrainingService {
                     + "* 역량: 점수·태그 기반 진단, 즉시 실행 가능한 과제 제안\n"
                     + "\n"
                     + "## 레시피/절차 생성\n"
-                    + "* 입력해석: 4개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
+                    + "* 입력해석: 3개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
                     + "* 우선순위: 60점 미만 항목 → 60~80점 항목 → 80점 이상 항목 순\n"
                     + "* 작성순서: 제목(한줄) → 상태요약(2~4문장) → 가능한 원인(가설) → 실행 제안(구체적 행동 지시)\n"
                     + "\n"
@@ -438,16 +430,16 @@ class TrainingServiceImpl implements TrainingService {
                     + "* 이해용이성: 초·중급 눈높이, 전문용어 풀어쓰기\n"
                     + "* 구체성: 연습법에 횟수, 시간 명시\n"
                     + "* 권장사항: '~해요'로 문장 종결\n"
-                    + "* 금지사항: 이모지, 감탄사, 의성어, 과도한 격려, 발성 태그명과 확률 직접 제시, 4개 항목별 점수 직접 언급\n"
+                    + "* 금지사항: 이모지, 감탄사, 의성어, 과도한 격려, 발성 태그명과 확률 직접 제시, 3개 항목별 점수 직접 언급\n"
                     + "\n"
                     + "## 인지 검증자\n"
-                    + "* JSON검증: 4개 키 존재, 모든 값은 문자열 타입\n"
+                    + "* JSON검증: 3개 키 존재, 모든 값은 문자열 타입\n"
                     + "* 길이검증: 각 필드별 글자수 제한 준수 (초과시 핵심 중심 간결화 재시도)\n"
                     + "* (초과시)축약규칙: 부사·수식어 → 중복 문구 → 예시 순 제거\n"
                     + "* 언어검증: 한국어만 사용\n"
                     + "\n"
                     + "## 컨텍스트 관리자\n"
-                    + "* 필수입력: 음정·박자·발음·호흡 점수 + 발성태그TOP3(확률%)\n"
+                    + "* 필수입력: 음정·박자·발음 점수 + 발성태그TOP3(확률%)\n"
                     + "* 예외처리: 결측값은 해당 항목 언급 생략\n"
                     + "* 분석기준: 최저점수 항목을 중심으로 원인과 해결책 도출\n"
                     + "* 출력규칙: 반드시 JSON만 반환, 코드블록·주석·줄바꿈·백틱·설명문·마크다운 금지, 한국어 고정\n"
@@ -457,7 +449,6 @@ class TrainingServiceImpl implements TrainingService {
                     "음정 점수: " + request.getPitchAccuracy() + "\n" +
                     "박자 점수: " + request.getBeatAccuracy() + "\n" +
                     "발음 점수: " + pronunciationScore + "\n" +
-                    "호흡 점수: " + breathScore + "\n" +
                     "발성 태그와 예측 확률: " + "\n" +
                     typeList.get(0) + " " + ratioList.get(0) + "\n" +
                     typeList.get(1) + " " + ratioList.get(1) + "\n" +
@@ -486,7 +477,6 @@ class TrainingServiceImpl implements TrainingService {
                     .pitchScore(request.getPitchAccuracy())
                     .beatScore(request.getBeatAccuracy())
                     .pronunciationScore(pronunciationScore)
-                    .breathScore(breathScore)
                     .overallReviewTitle(overallReviewTitle)
                     .overallReviewContent(overallReviewContent)
                     .causeContent(causeContent)
@@ -580,8 +570,6 @@ class TrainingServiceImpl implements TrainingService {
 
             int pronunciationScore = calculateSimilarityScore(transcriptText, lyricText);
 
-            // 호흡 평가
-            int breathScore = 60;
 
             String userPrompt =
                     "## 페르소나\n"
@@ -591,7 +579,7 @@ class TrainingServiceImpl implements TrainingService {
                     + "* 역량: 점수·태그 기반 진단, 즉시 실행 가능한 과제 제안\n"
                     + "\n"
                     + "## 레시피/절차 생성\n"
-                    + "* 입력해석: 4개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
+                    + "* 입력해석: 3개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
                     + "* 우선순위: 60점 미만 항목 → 60~80점 항목 → 80점 이상 항목 순\n"
                     + "* 작성순서: 제목(한줄) → 상태요약(2~4문장) → 가능한 원인(가설) → 실행 제안(구체적 행동 지시)\n"
                     + "\n"
@@ -618,16 +606,16 @@ class TrainingServiceImpl implements TrainingService {
                     + "* 이해용이성: 초·중급 눈높이, 전문용어 풀어쓰기\n"
                     + "* 구체성: 연습법에 횟수, 시간 명시\n"
                     + "* 권장사항: '~해요'로 문장 종결\n"
-                    + "* 금지사항: 이모지, 감탄사, 의성어, 과도한 격려, 발성 태그명과 확률 직접 제시, 4개 항목별 점수 직접 언급\n"
+                    + "* 금지사항: 이모지, 감탄사, 의성어, 과도한 격려, 발성 태그명과 확률 직접 제시, 3개 항목별 점수 직접 언급\n"
                     + "\n"
                     + "## 인지 검증자\n"
-                    + "* JSON검증: 4개 키 존재, 모든 값은 문자열 타입\n"
+                    + "* JSON검증: 3개 키 존재, 모든 값은 문자열 타입\n"
                     + "* 길이검증: 각 필드별 글자수 제한 준수 (초과시 핵심 중심 간결화 재시도)\n"
                     + "* (초과시)축약규칙: 부사·수식어 → 중복 문구 → 예시 순 제거\n"
                     + "* 언어검증: 한국어만 사용\n"
                     + "\n"
                     + "## 컨텍스트 관리자\n"
-                    + "* 필수입력: 음정·박자·발음·호흡 점수 + 발성태그TOP3(확률%)\n"
+                    + "* 필수입력: 음정·박자·발음 점수 + 발성태그TOP3(확률%)\n"
                     + "* 예외처리: 결측값은 해당 항목 언급 생략\n"
                     + "* 분석기준: 최저점수 항목을 중심으로 원인과 해결책 도출\n"
                     + "* 출력규칙: 반드시 JSON만 반환, 코드블록·주석·줄바꿈·백틱·설명문·마크다운 금지, 한국어 고정\n"
@@ -637,7 +625,6 @@ class TrainingServiceImpl implements TrainingService {
                     "음정 점수: " + request.getPitchAccuracy() + "\n" +
                     "박자 점수: " + request.getBeatAccuracy() + "\n" +
                     "발음 점수: " + pronunciationScore + "\n" +
-                    "호흡 점수: " + breathScore + "\n" +
                     "발성 태그와 예측 확률: " + "\n" +
                     typeList.get(0) + " " + ratioList.get(0) + "\n" +
                     typeList.get(1) + " " + ratioList.get(1) + "\n" +
@@ -667,7 +654,6 @@ class TrainingServiceImpl implements TrainingService {
                     .pitchScore(request.getPitchAccuracy())
                     .beatScore(request.getBeatAccuracy())
                     .pronunciationScore(pronunciationScore)
-                    .breathScore(breathScore)
                     .overallReviewTitle(overallReviewTitle)
                     .overallReviewContent(overallReviewContent)
                     .causeContent(causeContent)
@@ -767,8 +753,6 @@ class TrainingServiceImpl implements TrainingService {
 
             int pronunciationScore = calculateSimilarityScore(transcriptText, lyricText);
 
-            // 호흡 평가
-            int breathScore = 60;
 
             String userPrompt =
                     "## 페르소나\n"
@@ -778,7 +762,7 @@ class TrainingServiceImpl implements TrainingService {
                     + "* 역량: 점수·태그 기반 진단, 즉시 실행 가능한 과제 제안\n"
                     + "\n"
                     + "## 레시피/절차 생성\n"
-                    + "* 입력해석: 4개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
+                    + "* 입력해석: 3개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
                     + "* 우선순위: 60점 미만 항목 → 60~80점 항목 → 80점 이상 항목 순\n"
                     + "* 작성순서: 훈련 후 보컬에 대한 총평 제목(한 줄) → 상태요약(1~3문장) → 훈련 전후 차이에 대한 피드백 제목(한 줄) → 피드백 내용(구체적 행동 지시)\n"
                     + "\n"
@@ -805,16 +789,16 @@ class TrainingServiceImpl implements TrainingService {
                     + "* 이해용이성: 초·중급 눈높이, 전문용어 풀어쓰기\n"
                     + "* 구체성: 연습법에 횟수, 시간 명시\n"
                     + "* 권장사항: '~해요'로 문장 종결\n"
-                    + "* 금지사항: 이모지, 감탄사, 의성어, 과도한 격려, 발성 태그명과 확률 직접 제시, 4개 항목별 점수 직접 언급\n"
+                    + "* 금지사항: 이모지, 감탄사, 의성어, 과도한 격려, 발성 태그명과 확률 직접 제시, 3개 항목별 점수 직접 언급\n"
                     + "\n"
                     + "## 인지 검증자\n"
-                    + "* JSON검증: 4개 키 존재, 모든 값은 문자열 타입\n"
+                    + "* JSON검증: 3개 키 존재, 모든 값은 문자열 타입\n"
                     + "* 길이검증: 각 필드별 글자수 제한 준수 (초과시 핵심 중심 간결화 재시도)\n"
                     + "* (초과시)축약규칙: 부사·수식어 → 중복 문구 → 예시 순 제거\n"
                     + "* 언어검증: 한국어만 사용\n"
                     + "\n"
                     + "## 컨텍스트 관리자\n"
-                    + "* 필수입력: 음정·박자·발음·호흡 점수 + 발성태그TOP3(확률%)\n"
+                    + "* 필수입력: 음정·박자·발음 점수 + 발성태그TOP3(확률%)\n"
                     + "* 예외처리: 결측값은 해당 항목 언급 생략\n"
                     + "* 분석기준: 최저점수 항목을 중심으로 원인과 해결책 도출\n"
                     + "* 출력규칙: 반드시 JSON만 반환, 코드블록·주석·줄바꿈·백틱·설명문·마크다운 금지, 한국어 고정\n"
@@ -824,11 +808,9 @@ class TrainingServiceImpl implements TrainingService {
                     "훈련 전 음정 점수: " + preReport.getPitchScore() + "\n" +
                     "훈련 전 박자 점수: " + preReport.getBeatScore() + "\n" +
                     "훈련 전 발음 점수: " + preReport.getPronunciationScore() + "\n" +
-                    "훈련 전 호흡 점수: " + preReport.getBreathScore() + "\n" +
                     "훈련 후 음정 점수: " + request.getPitchAccuracy() + "\n" +
                     "훈련 후 박자 점수: " + request.getBeatAccuracy() + "\n" +
                     "훈련 후 발음 점수: " + pronunciationScore + "\n" +
-                    "훈련 후 호흡 점수: " + breathScore + "\n" +
                     "훈련 후 발성 태그와 예측 확률: " + "\n" +
                     typeList.get(0) + " " + ratioList.get(0) + "\n" +
                     typeList.get(1) + " " + ratioList.get(1) + "\n" +
@@ -858,7 +840,6 @@ class TrainingServiceImpl implements TrainingService {
                     .pitchScore(request.getPitchAccuracy())
                     .beatScore(request.getBeatAccuracy())
                     .pronunciationScore(pronunciationScore)
-                    .breathScore(breathScore)
                     .overallReviewTitle(overallReviewTitle)
                     .overallReviewContent(overallReviewContent)
                     .feedbackTitle(feedbackTitle)
