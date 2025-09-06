@@ -10,6 +10,8 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Builder
@@ -56,5 +58,10 @@ public class TrainingSession extends BaseEntity {
     @NotNull
     @Column(name = "curriculum_end_date", nullable = false)
     private LocalDateTime curriculumEndDate;
+
+    @OneToMany(mappedBy = "trainingSession",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    private List<Recording> recordings = new ArrayList<>();
 
 }

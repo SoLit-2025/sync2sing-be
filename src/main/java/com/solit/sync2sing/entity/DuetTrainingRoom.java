@@ -2,7 +2,6 @@ package com.solit.sync2sing.entity;
 
 import com.solit.sync2sing.global.entity.BaseEntity;
 import com.solit.sync2sing.global.type.DuetTrainingRoomStatus;
-import com.solit.sync2sing.global.type.VoiceType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -23,9 +22,20 @@ public class DuetTrainingRoom extends BaseEntity {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "host_training_session_id", nullable = false)
+    @JoinColumn(name = "host_id", nullable = false)
+    private User host;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "song_id", nullable = false)
+    private Song song;
+
+    @Setter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "host_training_session_id")
     private TrainingSession hostTrainingSession;
 
+    @Setter
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "partner_training_session_id")
     private TrainingSession partnerTrainingSession;
@@ -35,25 +45,27 @@ public class DuetTrainingRoom extends BaseEntity {
     @JoinColumn(name = "host_user_part_id", nullable = false)
     private DuetSongPart hostUserPart;
 
+    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "partner_user_part_id")
+    @JoinColumn(name = "partner_user_part_id", nullable = false)
     private DuetSongPart partnerUserPart;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "partner_voice_type_preference", length = 50)
-    private VoiceType partnerVoiceTypePreference;
+    @NotNull
+    @Column(name = "curriculum_days", nullable = false)
+    private Integer curriculumDays;
 
+    @Setter
     @Enumerated(EnumType.STRING)
     @NotNull
     @Column(name = "status", nullable = false, length = 50)
     private DuetTrainingRoomStatus status = DuetTrainingRoomStatus.PENDING;
 
-    @NotNull
-    @Column(name = "pre_recording_due_date", nullable = false)
+    @Setter
+    @Column(name = "pre_recording_due_date")
     private LocalDateTime preRecordingDueDate;
 
-    @NotNull
-    @Column(name = "post_recording_due_date", nullable = false)
+    @Setter
+    @Column(name = "post_recording_due_date")
     private LocalDateTime postRecordingDueDate;
 
 }

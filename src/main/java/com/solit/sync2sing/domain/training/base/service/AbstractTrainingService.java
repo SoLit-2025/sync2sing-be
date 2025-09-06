@@ -3,13 +3,11 @@ package com.solit.sync2sing.domain.training.base.service;
 import com.solit.sync2sing.domain.training.base.dto.*;
 import com.solit.sync2sing.domain.training.common.dto.CurriculumListResponse;
 import com.solit.sync2sing.domain.training.common.dto.TrainingDTO;
+import com.solit.sync2sing.domain.training.duet.dto.DuetTrainingRoomListResponse;
 import com.solit.sync2sing.entity.*;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.security.CustomUserDetails;
-import com.solit.sync2sing.global.type.RecordingContext;
-import com.solit.sync2sing.global.type.SessionStatus;
-import com.solit.sync2sing.global.type.TrainingCategory;
-import com.solit.sync2sing.global.type.TrainingMode;
+import com.solit.sync2sing.global.type.*;
 import com.solit.sync2sing.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.chrono.ChronoLocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,7 +34,7 @@ public abstract class AbstractTrainingService {
 
     public Optional<SessionDTO> getSession(CustomUserDetails userDetails) {
 
-        // 1) 내 세션 조회
+        // 내 세션 조회
         TrainingSession mySession;
         Optional<TrainingSession> mySessionOpt = trainingSessionRepository
                 .findByUser(userDetails.getUser()).stream()
@@ -57,7 +56,7 @@ public abstract class AbstractTrainingService {
             trainingSessionRepository.save(mySession);
         }
 
-        // 2) SongDTO 빌드 (SOLO: id/title/artist, DUET: + userPartName)
+        // SongDTO 빌드 (SOLO: id/title/artist, DUET: + userPartName)
         Song song = mySession.getSong();
         SongListDTO.SongDTO.SongDTOBuilder songB = SongListDTO.SongDTO.builder()
                 .id(song.getId())
@@ -65,9 +64,12 @@ public abstract class AbstractTrainingService {
                 .artist(song.getArtist());
 
         LocalDateTime preDue = null, postDue = null;
+        Optional<Recording> preRec = Optional.empty();
+        Optional<Recording> postRecOpt = Optional.empty();
+        DuetTrainingRoomListResponse.DuetTrainingRoomDto.DuetTrainingRoomDtoBuilder DuetTrainingRoomDtoB = null;
 
         if (trainingMode == TrainingMode.DUET) {
-            // 3) DuetTrainingRoom 에서 사용자가 참가 중인 듀엣 방 정보, 파트 이름, 마감일 꺼내기
+            // DuetTrainingRoom 에서 사용자가 참가 중인 듀엣 방 정보, 파트 이름, 마감일 꺼내기
             DuetTrainingRoom room = duetTrainingRoomRepository
                     .findByHostTrainingSessionOrPartnerTrainingSession(mySession, mySession)
                     .orElseThrow(() ->
@@ -87,17 +89,44 @@ public abstract class AbstractTrainingService {
             // 듀엣 녹음 마감일
             preDue  = room.getPreRecordingDueDate();
             postDue = room.getPostRecordingDueDate();
+
+            preRec = recordingRepository
+                    .findByTrainingSessionAndRecordingPhaseAndRecordingFormat(mySession, RecordingContext.PRE, RecordingFormat.MERGED);
+            postRecOpt = recordingRepository
+                    .findByTrainingSessionAndRecordingPhaseAndRecordingFormat(mySession, RecordingContext.POST, RecordingFormat.MERGED);
+
+
+            if (LocalDate.now().isAfter(ChronoLocalDate.from(preDue)) && preRec.isEmpty()) {
+                userDetails.getUser().setDuetPenaltyCount(userDetails.getUser().getDuetPenaltyCount() + 1);
+                userDetails.getUser().setDuetPenaltyUntil(LocalDate.now().plusDays(3).atStartOfDay());
+
+                deleteRoom(room.getId());
+
+                return Optional.empty();
+            }
+
+            if (LocalDate.now().isAfter(ChronoLocalDate.from(postDue)) && postRecOpt.isEmpty()) {
+                userDetails.getUser().setDuetPenaltyCount(userDetails.getUser().getDuetPenaltyCount() + 1);
+                userDetails.getUser().setDuetPenaltyUntil(LocalDate.now().plusDays(3).atStartOfDay());
+
+                deleteRoom(room.getId());
+
+                return Optional.empty();
+            }
+
+            DuetTrainingRoomDtoB = DuetTrainingRoomListResponse.DuetTrainingRoomDto.builder()
+                    .id(room.getId())
+                    .createdAt(room.getCreatedAt())
+                    .trainingDays(room.getCurriculumDays())
+                    .hostPartNumber(room.getHostUserPart().getPartNumber())
+                    .hostPartName(room.getHostUserPart().getPartName())
+                    .partnerPartNumber(room.getPartnerUserPart().getPartNumber())
+                    .partnerPartName(room.getPartnerUserPart().getPartName());
         }
 
         SongListDTO.SongDTO songDTO = songB.build();
 
-        // 4) PRE / POST 녹음 URL 조회
-        Optional<Recording> preRec = recordingRepository
-                .findByTrainingSessionAndRecordingPhase(mySession, RecordingContext.PRE);
-        Optional<Recording> postRecOpt = recordingRepository
-                .findByTrainingSessionAndRecordingPhase(mySession, RecordingContext.POST);
-
-        // 5) 커리큘럼 매핑
+        // 커리큘럼 매핑
         List<TrainingSessionTraining> trainings =
                 trainingSessionTrainingRepository.findByTrainingSession(mySession);
 
@@ -138,7 +167,7 @@ public abstract class AbstractTrainingService {
                 .pronunciation(vocalList)
                 .build();
 
-        // 6) SessionDTO 빌드 (DUET인 경우 dueDate 추가)
+        // SessionDTO 빌드
         SessionDTO.SessionDTOBuilder dtoB = SessionDTO.builder()
                 .sessionId(mySession.getId())
                 .status(mySession.getStatus())
@@ -146,24 +175,38 @@ public abstract class AbstractTrainingService {
                 .endDate(mySession.getCurriculumEndDate())
                 .trainingDays(mySession.getCurriculumDays())
                 .song(songDTO)
-                .preRecordingFileUrl(preRec
-                        .map(r -> r.getAudioFile().getFileUrl())
-                        .orElse(null)
-                )
-                .postRecordingFileUrl(
-                        postRecOpt
-                                .map(r -> r.getAudioFile().getFileUrl())
-                                .orElse(null)
-                )
                 .curriculum(curriculum);
 
         if (trainingMode == TrainingMode.DUET) {
             dtoB.preRecordingDueDate(preDue)
-                    .postRecordingDueDate(postDue);
+                .postRecordingDueDate(postDue)
+                .preRecordingFileUrl(
+                    preRec
+                        .map(r -> r.getAudioFile().getFileUrl())
+                        .orElse(null)
+                )
+                .postRecordingFileUrl(
+                    postRecOpt
+                        .map(r -> r.getAudioFile().getFileUrl())
+                        .orElse(null)
+                );
+
+            DuetTrainingRoomListResponse.SongDTO duetSongDTO = DuetTrainingRoomListResponse.SongDTO.builder()
+                    .id(song.getId())
+                    .title(song.getTitle())
+                    .artist(song.getArtist())
+                    .albumArtUrl(song.getAlbumCoverFile().getFileUrl())
+                    .build();
+            DuetTrainingRoomListResponse.DuetTrainingRoomDto duetTrainingRoomDto = DuetTrainingRoomDtoB.song(duetSongDTO).build();
+            dtoB.duetTrainingRoom(duetTrainingRoomDto);
         }
 
         return Optional.of(dtoB.build());
 
+    }
+
+    protected void deleteRoom(Long roomId) {
+        // DuetTrainingService에서 구현
     }
 
     @Transactional
@@ -187,7 +230,7 @@ public abstract class AbstractTrainingService {
                 );
 
         // 2) 세션 엔티티 생성
-        LocalDateTime start = LocalDateTime.now();
+        LocalDateTime start = trainingMode == TrainingMode.SOLO ? LocalDateTime.now() : LocalDateTime.now().plusDays(3);
         LocalDateTime end   = start.plusDays(request.getTrainingDays() - 1);
 
         TrainingSession session = TrainingSession.builder()

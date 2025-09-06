@@ -1,43 +1,40 @@
 package com.solit.sync2sing.domain.training.duet.service;
 
 import com.solit.sync2sing.domain.training.base.dto.*;
-import com.solit.sync2sing.domain.training.common.dto.GenerateVocalAnalysisReportRequest;
-import com.solit.sync2sing.domain.training.common.dto.VocalAnalysisReportDTO;
 import com.solit.sync2sing.domain.training.duet.dto.*;
-import org.springframework.security.core.userdetails.UserDetails;
+import com.solit.sync2sing.entity.User;
+import com.solit.sync2sing.global.security.CustomUserDetails;
 
-import java.util.List;
+import java.util.Optional;
 
 public interface DuetTrainingService {
 
-    AudioMergeResponseDTO mergeAudios(Long roomId);
+    SentPartnerApplicationListResponse getSentPartnerApplications(CustomUserDetails userDetails);
 
-    PartnerApplicationDTO applyForPartner(UserDetails userDetails, CreatePartnerApplicationRequest request);
+    DuetTrainingRoomListResponse getRoomList();
 
-    List<ReceivedPartnerApplicationDTO> getReceivedPartnerApplications(UserDetails userDetails);
+    DuetTrainingRoomListResponse.DuetTrainingRoomDto createRoom(CustomUserDetails userDetails, CreateRoomRequest request);
 
-    List<SentPartnerApplicationDTO> getSentPartnerApplications(UserDetails userDetails);
+    void deleteRoom(Long roomId);
 
-    AcceptPartnerApplicationResponseDTO acceptPartnerApplication(UserDetails userDetails, Long applicationId);
+    ReceivedPartnerApplicationListResponse getReceivedPartnerApplications(CustomUserDetails userDetails, Long roomId);
 
-    RejectPartnerApplicationResponseDTO rejectPartnerApplication(UserDetails userDetails, Long applicationId);
+    SentPartnerApplicationListResponse.ApplicationDTO createDuetRoomApplication(CustomUserDetails userDetails, Long roomId);
 
-    List<DuetTrainingRoomDTO> getRoomList();
+    AcceptPartnerApplicationAndCreateSessionResponse acceptPartnerApplicationAndCreateSession(CustomUserDetails userDetails, Long roomId, Long applicationId);
 
-    CreateRoomResponseDTO createRoom(UserDetails userDetails, CreateRoomRequest request);
+    SessionDTO createSession(User user, CreateSessionRequest createSessionRequest);
 
-    DuetTrainingSessionResponseDTO getSession(UserDetails userDetails);
+    void deletePartnerApplication(CustomUserDetails userDetails, Long roomId, Long applicationId);
 
-    EndSessionResponseDTO endSession(UserDetails userDetails);
+    AudioMergeResponse mergeAudios(CustomUserDetails userDetails, Long roomId);
 
-    List<SongListDTO.SongDTO> getSongList(String type);
+    Optional<SessionDTO> getSession(CustomUserDetails userDetails);
+
+    void deleteSession(CustomUserDetails userDetails);
+
+    SongListDTO getSongList(String type);
 
     SongListDTO.SongDTO getSong(Long songId, String type);
-
-    List<CurrentTrainingDTO> getCurrentTraining(UserDetails userDetails);
-
-    SetTrainingProgressResponseDTO updateTrainingProgress(UserDetails userDetails, Long trainingId, int progress);
-
-    VocalAnalysisReportDTO generateVocalAnalysisReport(String recordingFileUrl, GenerateVocalAnalysisReportRequest request);
 
 }
