@@ -58,7 +58,7 @@ public class SoloTrainingController {
             .status(HttpStatus.CREATED)
             .body(new ResponseDTO(
                 ResponseCode.SOLO_TRAINING_SESSION_CREATED,
-                soloTrainingService.createSession(userDetails, createSessionRequest)
+                soloTrainingService.createSession(userDetails.getUser(), createSessionRequest)
             ));
     }
 

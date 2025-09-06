@@ -170,7 +170,7 @@ public abstract class AbstractTrainingService {
     }
 
     @Transactional
-    public SessionDTO createSession(CustomUserDetails userDetails, CreateSessionRequest request) {
+    public SessionDTO createSession(User user, CreateSessionRequest request) {
         // trainingDays 유효성 검사 (3, 7, 14만 허용)
         int days = request.getTrainingDays();
         if (days != 3 && days != 7 && days != 14) {
@@ -196,7 +196,7 @@ public abstract class AbstractTrainingService {
         LocalDateTime end   = start.plusDays(request.getTrainingDays() - 1);
 
         TrainingSession session = TrainingSession.builder()
-                .user(userDetails.getUser())
+                .user(user)
                 .song(song)
                 .trainingMode(trainingMode)
                 .curriculumStartDate(start)
@@ -216,6 +216,7 @@ public abstract class AbstractTrainingService {
                 .build();
 
         return SessionDTO.builder()
+                .sessionId(session.getId())
                 .status(session.getStatus())
                 .startDate(session.getCurriculumStartDate())
                 .endDate(session.getCurriculumEndDate())
