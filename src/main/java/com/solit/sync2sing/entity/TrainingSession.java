@@ -40,10 +40,6 @@ public class TrainingSession extends BaseEntity {
     private TrainingMode trainingMode;
 
     @NotNull
-    @Column(name = "key_adjustment", nullable = false)
-    private Integer keyAdjustment;
-
-    @NotNull
     @Column(name = "curriculum_days", nullable = false)
     private Integer curriculumDays;
 

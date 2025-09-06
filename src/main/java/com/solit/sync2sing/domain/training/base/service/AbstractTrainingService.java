@@ -147,7 +147,6 @@ public abstract class AbstractTrainingService {
                 .startDate(mySession.getCurriculumStartDate())
                 .endDate(mySession.getCurriculumEndDate())
                 .trainingDays(mySession.getCurriculumDays())
-                .keyAdjustment(mySession.getKeyAdjustment())
                 .song(songDTO)
                 .preRecordingFileUrl(preRec
                         .map(r -> r.getAudioFile().getFileUrl())
@@ -180,8 +179,6 @@ public abstract class AbstractTrainingService {
             );
         }
 
-        // TODO: getKeyAdjustment 유효성 검사
-
         // 1) 요청한 Song 조회
         Song song = songRepository.findById(request.getSongId())
                 .orElseThrow(() ->
@@ -202,7 +199,6 @@ public abstract class AbstractTrainingService {
                 .curriculumStartDate(start)
                 .curriculumEndDate(end)
                 .curriculumDays(request.getTrainingDays())
-                .keyAdjustment(request.getKeyAdjustment())
                 .status(SessionStatus.BEFORE_TRAINING)
                 .build();
 
@@ -221,7 +217,6 @@ public abstract class AbstractTrainingService {
                 .startDate(session.getCurriculumStartDate())
                 .endDate(session.getCurriculumEndDate())
                 .trainingDays(session.getCurriculumDays())
-                .keyAdjustment(session.getKeyAdjustment())
                 .song(songDto)
                 .preRecordingFileUrl(null)
                 .postRecordingFileUrl(null)

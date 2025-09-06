@@ -20,7 +20,6 @@ public class SessionDTO {
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private Integer trainingDays;
-    private Integer keyAdjustment;
     private SongListDTO.SongDTO song;
 
     @JsonInclude(JsonInclude.Include.ALWAYS)
