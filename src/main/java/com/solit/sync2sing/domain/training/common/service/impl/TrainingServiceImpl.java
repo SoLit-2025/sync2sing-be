@@ -518,7 +518,7 @@ public class TrainingServiceImpl implements TrainingService {
                         ResponseCode.TRAINING_SESSION_NOT_FOUND.getStatus(),
                         ResponseCode.TRAINING_SESSION_NOT_FOUND.getMessage()
                 ));
-        Song trsiningSong = session.getSong();
+        Song trainingSong = session.getSong();
 
         String recordingAudioS3Url = null;
 
@@ -566,7 +566,7 @@ public class TrainingServiceImpl implements TrainingService {
             String lyricText = "";
             if (trainingMode.equals(TrainingMode.SOLO)) {
                 // 전체 가사 조회
-                List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(trsiningSong);
+                List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(trainingSong);
                 lyricText += lines.stream()
                         .map(Lyricsline::getText) + " ";
             } else if (trainingMode.equals(TrainingMode.DUET)) {
@@ -665,8 +665,8 @@ public class TrainingServiceImpl implements TrainingService {
 
             VocalAnalysisReport vocalAnalysisReport = VocalAnalysisReport.builder()
                     .user(userDetails.getUser())
-                    .song(trsiningSong)
-                    .title(vocalAnalysisReportTitle(trsiningSong.getTitle()))
+                    .song(trainingSong)
+                    .title(vocalAnalysisReportTitle(trainingSong.getTitle()))
                     .trainingMode(trainingMode)
                     .reportType(RecordingContext.PRE)
                     .pitchScore(request.getPitchAccuracy())
@@ -732,12 +732,12 @@ public class TrainingServiceImpl implements TrainingService {
                         ResponseCode.TRAINING_SESSION_NOT_FOUND.getStatus(),
                         ResponseCode.TRAINING_SESSION_NOT_FOUND.getMessage()
                 ));
-        Song trsiningSong = session.getSong();
+        Song trainingSong = session.getSong();
 
         // 훈련 전 보컬분석리포트
         VocalAnalysisReport preReport = vocalAnalysisReportRepository
                 .findTopBySongAndTrainingModeAndReportTypeOrderByCreatedAtDesc(
-                        trsiningSong, trainingMode, RecordingContext.PRE
+                        trainingSong, trainingMode, RecordingContext.PRE
                 )
                 .orElse(null);
 
@@ -787,7 +787,7 @@ public class TrainingServiceImpl implements TrainingService {
             String lyricText = "";
             if (trainingMode.equals(TrainingMode.SOLO)) {
                 // 전체 가사 조회
-                List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(trsiningSong);
+                List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(trainingSong);
                 lyricText += lines.stream()
                         .map(Lyricsline::getText) + " ";
             } else if (trainingMode.equals(TrainingMode.DUET)) {
@@ -889,8 +889,8 @@ public class TrainingServiceImpl implements TrainingService {
 
             VocalAnalysisReport vocalAnalysisReport = VocalAnalysisReport.builder()
                     .user(userDetails.getUser())
-                    .song(trsiningSong)
-                    .title(vocalAnalysisReportTitle(trsiningSong.getTitle()))
+                    .song(trainingSong)
+                    .title(vocalAnalysisReportTitle(trainingSong.getTitle()))
                     .trainingMode(trainingMode)
                     .reportType(RecordingContext.POST)
                     .pitchScore(request.getPitchAccuracy())
@@ -957,7 +957,7 @@ public class TrainingServiceImpl implements TrainingService {
                         ResponseCode.TRAINING_SESSION_NOT_FOUND.getStatus(),
                         ResponseCode.TRAINING_SESSION_NOT_FOUND.getMessage()
                 ));
-        Song trsiningSong = session.getSong();
+        Song trainingSong = session.getSong();
 
         try {
             String jobName = "transcripts_job-" + UUID.randomUUID();
@@ -1000,7 +1000,7 @@ public class TrainingServiceImpl implements TrainingService {
             }
 
             // 전체 가사 조회
-            List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(trsiningSong);
+            List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(trainingSong);
             String lyricText = "";
             lyricText += lines.stream()
                     .map(Lyricsline::getText) + " ";
@@ -1081,8 +1081,8 @@ public class TrainingServiceImpl implements TrainingService {
 
             VocalAnalysisReport vocalAnalysisReport = VocalAnalysisReport.builder()
                     .user(userDetails.getUser())
-                    .song(trsiningSong)
-                    .title(vocalAnalysisReportTitle(trsiningSong.getTitle()))
+                    .song(trainingSong)
+                    .title(vocalAnalysisReportTitle(trainingSong.getTitle()))
                     .trainingMode(trainingMode)
                     .reportType(RecordingContext.valueOf(request.getAnalysisType()))
                     .pitchScore(request.getPitchAccuracy())
