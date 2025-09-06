@@ -346,7 +346,7 @@ public class TrainingServiceImpl implements TrainingService {
             MultipartFile vocalFile,
             GenerateVocalAnalysisReportRequest request
     ) {
-        Song guestSong = songRepository.findByTitle("Do-Re-Mi")
+        Song guestSong = songRepository.findFirstByTrainingMode(TrainingMode.GUEST)
                 .orElseThrow(() ->
                         new ResponseStatusException(
                                 ResponseCode.SONG_NOT_FOUND.getStatus(),
@@ -401,9 +401,10 @@ public class TrainingServiceImpl implements TrainingService {
                 ratioList.add(String.format("%.3f", ratio));
             }
 
-            String lyricText =
-                    "Doe, a deer, a female deer " +
-                    "Ray, a drop of golden sun";
+            String lyricText = "";
+            List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(guestSong);
+            lyricText += lines.stream()
+                    .map(Lyricsline::getText) + " ";
 
             int pronunciationScore = calculateSimilarityScore(transcriptText, lyricText);
 
