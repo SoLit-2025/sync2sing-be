@@ -10,20 +10,13 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PostVocalAnalysisReportResponse extends GenerateVocalAnalysisReportResponse {
-
-    private int prePitchScore;
-    private int preBeatScore;
-    private int prePronunciationScore;
+public class DuetMergedVocalAnalysisReportResponse extends GenerateVocalAnalysisReportResponse {
 
     private String feedbackTitle;
     private String feedbackContent;
 
-    public static PostVocalAnalysisReportResponse toDTO(VocalAnalysisReport vocalAnalysisReport) {
-        return PostVocalAnalysisReportResponse.builder()
-                .prePitchScore(vocalAnalysisReport.getPreTrainingReport().getPitchScore())
-                .preBeatScore(vocalAnalysisReport.getPreTrainingReport().getBeatScore())
-                .prePronunciationScore(vocalAnalysisReport.getPreTrainingReport().getPronunciationScore())
+    public static DuetMergedVocalAnalysisReportResponse toDTO(VocalAnalysisReport vocalAnalysisReport) {
+        return DuetMergedVocalAnalysisReportResponse.builder()
                 .reportId(vocalAnalysisReport.getId())
                 .analysisType(vocalAnalysisReport.getReportType())
                 .title(vocalAnalysisReport.getTitle())

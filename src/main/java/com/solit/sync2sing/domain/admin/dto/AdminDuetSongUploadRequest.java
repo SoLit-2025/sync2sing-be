@@ -13,10 +13,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AdminSoloSongUploadRequest {
-
-    @NotNull
-    private String trainingMode;
+public class AdminDuetSongUploadRequest {
 
     @NotNull
     private String title;
@@ -35,7 +32,7 @@ public class AdminSoloSongUploadRequest {
 
     @NotNull
     @Valid
-    private List<LyricLineDTO> lyrics;
+    private List<AdminDuetSongUploadRequest.LyricLineDTO> lyrics;
 
     @Getter
     @Builder
@@ -50,6 +47,9 @@ public class AdminSoloSongUploadRequest {
 
         @NotNull
         private Integer startTime;
+
+        @NotNull
+        private String partName;
     }
 
 }

@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AdminSoloSongDeleteRequest {
+public class AdminSongDeleteRequest {
 
     @NotNull
     Long songId;

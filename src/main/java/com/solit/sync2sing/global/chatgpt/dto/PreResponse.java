@@ -11,7 +11,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SoloPreResponse {
+public class PreResponse {
     private String overallReviewTitle;
     private String overallReviewContent;
     private String causeContent;

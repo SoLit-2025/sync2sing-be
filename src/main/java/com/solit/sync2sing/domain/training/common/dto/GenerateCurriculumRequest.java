@@ -1,7 +1,5 @@
 package com.solit.sync2sing.domain.training.common.dto;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,11 +24,6 @@ public class GenerateCurriculumRequest {
     @NotNull
     private String pronunciation;
 
-    @NotNull
-    private String breath;
-
-    @Min(3)
-    @Max(14)
     private int trainingDays;
 
 }

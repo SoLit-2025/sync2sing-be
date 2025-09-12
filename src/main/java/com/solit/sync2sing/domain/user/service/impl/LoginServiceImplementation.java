@@ -10,6 +10,7 @@ import com.solit.sync2sing.global.security.TokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public class LoginServiceImplementation implements UserLoginService {
     private final TokenProvider tokenProvider;
 
     @Override
+    @Transactional
     public LoginResponseDTO login(LoginRequestDTO requestDTO) {
         String username = requestDTO.getUsername();
         String password = requestDTO.getPassword();
