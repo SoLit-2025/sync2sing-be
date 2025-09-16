@@ -3,6 +3,7 @@ package com.solit.sync2sing.domain.training.base.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.solit.sync2sing.domain.training.common.dto.CurriculumListResponse;
 import com.solit.sync2sing.domain.training.common.dto.TrainingDTO;
+import com.solit.sync2sing.domain.training.duet.dto.DuetTrainingRoomListResponse;
 import com.solit.sync2sing.global.type.SessionStatus;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -20,7 +21,6 @@ public class SessionDTO {
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private Integer trainingDays;
-    private Integer keyAdjustment;
     private SongListDTO.SongDTO song;
 
     @JsonInclude(JsonInclude.Include.ALWAYS)
@@ -34,6 +34,8 @@ public class SessionDTO {
     // 듀엣 세션 DTO에만 사용되는 필드
     private LocalDateTime preRecordingDueDate;
     private LocalDateTime postRecordingDueDate;
+
+    private DuetTrainingRoomListResponse.DuetTrainingRoomDto duetTrainingRoom;
 
     @Getter
     @Setter

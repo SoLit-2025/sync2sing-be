@@ -7,6 +7,7 @@ import com.solit.sync2sing.repository.UserRepository;
 import com.solit.sync2sing.domain.user.service.UserInfoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 
@@ -17,6 +18,7 @@ public class UserInfoServiceImplementation implements UserInfoService {
     private final UserRepository userRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public UserInfoResponseDTO getUserInfo(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResponseStatusException(

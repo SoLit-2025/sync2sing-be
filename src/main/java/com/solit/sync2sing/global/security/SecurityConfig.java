@@ -42,6 +42,7 @@ public class SecurityConfig {
                                 "/api/user/signup",
                                 "/api/user/login",
                                 "/admin/song/solo",
+                                "/admin/song/duet",
                                 "/api/training/vocal-analysis"
                                 ).permitAll()
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()

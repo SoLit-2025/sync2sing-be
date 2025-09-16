@@ -1,6 +1,7 @@
 package com.solit.sync2sing.domain.admin.controller;
 
-import com.solit.sync2sing.domain.admin.dto.AdminSoloSongDeleteRequest;
+import com.solit.sync2sing.domain.admin.dto.AdminDuetSongUploadRequest;
+import com.solit.sync2sing.domain.admin.dto.AdminSongDeleteRequest;
 import com.solit.sync2sing.domain.admin.dto.AdminSoloSongUploadRequest;
 import com.solit.sync2sing.domain.admin.service.AdminSongService;
 import com.solit.sync2sing.global.response.ResponseCode;
@@ -44,17 +45,40 @@ public class AdminSongController {
         }
     }
 
-    @DeleteMapping("/solo")
-    public ResponseEntity<ResponseDTO> adminSoloSongDelete(
-            @RequestBody AdminSoloSongDeleteRequest request
+    @PostMapping("/duet")
+    public ResponseEntity<ResponseDTO> adminDuetSongUpload(
+            @RequestPart("album_cover_image") MultipartFile albumCoverImage,
+            @RequestPart("original_audio") MultipartFile originalAudio,
+            @RequestPart("mr_audio") MultipartFile mrAudio,
+            @RequestPart("data") AdminDuetSongUploadRequest data
     ) {
         try {
-            adminSongService.adminSoloSongDelete(request);
+            adminSongService.adminDuetSongUpload(albumCoverImage, originalAudio, mrAudio, data);
 
             return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .body(new ResponseDTO(
-                            ResponseCode.ADMIN_SOLOSONG_DELETED
+                            ResponseCode.ADMIN_DUETSONG_UPLOADED
+                    ));
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    ResponseCode.FILE_UPLOAD_EXCEPTION.getStatus(),
+                    ResponseCode.FILE_UPLOAD_EXCEPTION.getMessage()
+            );
+        }
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ResponseDTO> adminSongDelete(
+            @RequestBody AdminSongDeleteRequest request
+    ) {
+        try {
+            adminSongService.adminSongDelete(request);
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(new ResponseDTO(
+                            ResponseCode.ADMIN_SONG_DELETED
                     ));
         } catch (Exception e) {
             throw new ResponseStatusException(

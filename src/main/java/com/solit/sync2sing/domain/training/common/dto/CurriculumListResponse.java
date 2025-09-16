@@ -15,5 +15,4 @@ public class CurriculumListResponse {
     private List<TrainingDTO> pitch;
     private List<TrainingDTO> rhythm;
     private List<TrainingDTO> pronunciation;
-    private List<TrainingDTO> breath;
 }

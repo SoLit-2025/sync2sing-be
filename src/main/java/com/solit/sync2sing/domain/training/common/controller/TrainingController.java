@@ -32,7 +32,7 @@ public class TrainingController {
             .status(HttpStatus.CREATED)
             .body(new ResponseDTO(
                 ResponseCode.CURRICULUM_CREATED,
-                trainingService.generateTrainingCurriculum(userDetails, generateCurriculumRequest)
+                trainingService.generateTrainingCurriculum(userDetails.getId(), generateCurriculumRequest)
             ));
     }
 
@@ -44,7 +44,7 @@ public class TrainingController {
             .status(HttpStatus.OK)
             .body(new ResponseDTO(
                 ResponseCode.CURRENT_TRAINING_LIST_FETCHED,
-                trainingService.getCurrentTrainingList(userDetails)
+                trainingService.getCurrentTrainingList(userDetails.getId())
             ));
     }
 
@@ -59,7 +59,7 @@ public class TrainingController {
             .status(HttpStatus.OK)
             .body(new ResponseDTO(
                 ResponseCode.TRAINING_PROGRESS_UPDATED,
-                trainingService.setTrainingProgress(userDetails, setTrainingProgressRequest, sessionId, trainingId)
+                trainingService.setTrainingProgress(userDetails.getId(), setTrainingProgressRequest, sessionId, trainingId)
             ));
     }
 
@@ -80,7 +80,7 @@ public class TrainingController {
             .status(HttpStatus.CREATED)
             .body(new ResponseDTO(
                 ResponseCode.VOCAL_ANALYSIS_REPORT_CREATED,
-                trainingService.generateVocalAnalysisReport(userDetails, vocalFile, request)
+                trainingService.generateVocalAnalysisReport(userDetails.getId(), vocalFile, request)
             ));
     }
 

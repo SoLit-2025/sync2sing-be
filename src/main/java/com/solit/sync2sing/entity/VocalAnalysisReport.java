@@ -62,10 +62,6 @@ public class VocalAnalysisReport extends BaseEntity {
     @Column(name = "pronunciation_score", nullable = false)
     private Integer pronunciationScore;
 
-    @NotNull
-    @Column(name = "breath_score", nullable = false)
-    private Integer breathScore;
-
     @Size(max = 255)
     @NotNull
     @Column(name = "overall_review_title", nullable = false)

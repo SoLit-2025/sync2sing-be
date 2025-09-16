@@ -1,17 +1,16 @@
 package com.solit.sync2sing.domain.training.solo.service;
 
 import com.solit.sync2sing.domain.training.base.dto.*;
-import com.solit.sync2sing.global.security.CustomUserDetails;
 
 import java.util.Optional;
 
 public interface SoloTrainingService {
 
-    Optional<SessionDTO> getSession(CustomUserDetails userDetails);
+    Optional<SessionDTO> getSession(Long userId);
 
-    SessionDTO createSession(CustomUserDetails userDetails, CreateSessionRequest createSessionRequest);
+    SessionDTO createSession(Long userId, CreateSessionRequest createSessionRequest);
 
-    void deleteSession(CustomUserDetails userDetails);
+    void deleteSession(Long userId);
 
     SongListDTO getSongList(String type);
 

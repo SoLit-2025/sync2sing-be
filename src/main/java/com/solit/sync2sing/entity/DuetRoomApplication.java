@@ -22,6 +22,12 @@ public class DuetRoomApplication extends BaseEntity {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
+    @JoinColumn(name = "duet_training_room_id", nullable = false)
+    private DuetTrainingRoom duetTrainingRoom;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "applicant_user_id", nullable = false)
     private User applicantUser;
 
