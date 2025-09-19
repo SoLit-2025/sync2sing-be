@@ -24,7 +24,6 @@ public abstract class GenerateVocalAnalysisReportResponse {
     private int pitchScore;
     private int beatScore;
     private int pronunciationScore;
-    private int breathScore;
     private String overallReviewTitle;
     private String overallReviewContent;
     private LocalDateTime createdAt;

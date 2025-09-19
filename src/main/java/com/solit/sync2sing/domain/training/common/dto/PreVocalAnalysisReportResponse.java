@@ -24,7 +24,6 @@ public class PreVocalAnalysisReportResponse extends GenerateVocalAnalysisReportR
                 .pitchScore(vocalAnalysisReport.getPitchScore())
                 .beatScore(vocalAnalysisReport.getBeatScore())
                 .pronunciationScore(vocalAnalysisReport.getPronunciationScore())
-                .breathScore(vocalAnalysisReport.getBreathScore())
                 .overallReviewTitle(vocalAnalysisReport.getOverallReviewTitle())
                 .overallReviewContent(vocalAnalysisReport.getOverallReviewContent())
                 .causeContent(vocalAnalysisReport.getCauseContent())

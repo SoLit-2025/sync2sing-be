@@ -3,22 +3,16 @@ package com.solit.sync2sing.domain.user.controller;
 import com.solit.sync2sing.domain.user.dto.request.LoginRequestDTO;
 import com.solit.sync2sing.domain.user.dto.request.LogoutRequestDTO;
 import com.solit.sync2sing.domain.user.dto.request.SignupRequestDTO;
-import com.solit.sync2sing.domain.user.dto.response.LoginResponseDTO;
-import com.solit.sync2sing.domain.user.dto.response.LogoutResponseDTO;
+import com.solit.sync2sing.domain.user.dto.response.*;
 import com.solit.sync2sing.domain.user.dto.request.UserInfoUpdateRequestDTO;
-import com.solit.sync2sing.domain.user.dto.response.UserInfoUpdateResponseDTO;
 import com.solit.sync2sing.domain.user.service.UserInfoUpdateService;
-import com.solit.sync2sing.domain.user.dto.response.UserInfoResponseDTO;
-import com.solit.sync2sing.domain.user.dto.response.SoloVocalAnalysisReportListResponseDTO;
 import com.solit.sync2sing.domain.user.service.SoloVocalAnalysisReportListService;
 import com.solit.sync2sing.domain.user.service.UserLoginService;
 import com.solit.sync2sing.domain.user.service.UserLogoutService;
 import com.solit.sync2sing.domain.user.service.UserSignupService;
 import com.solit.sync2sing.domain.user.service.UserInfoService;
-import com.solit.sync2sing.domain.user.service.impl.SoloVocalAnalysisReportListServiceImpl;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.response.ResponseDTO;
-
 import com.solit.sync2sing.global.util.SecurityUtil;
 
 import org.springframework.http.HttpHeaders;
@@ -33,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/user")
@@ -64,18 +59,18 @@ public class UserController {
     @PostMapping("/signup")
     public ResponseEntity<ResponseDTO> signup(@RequestBody SignupRequestDTO signupRequest) {
         try {
+            SignupResponseDTO response = userSignupService.signUp(signupRequest);
             return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .body(new ResponseDTO(
                             ResponseCode.SIGNUP_SUCCESS,
-                            userSignupService.signUp(signupRequest)
+                            response
                     ));
-        } catch (Exception e) {
+        } catch (ResponseStatusException e) {
+            ResponseCode code = ResponseCode.from(e.getStatusCode(), e.getReason());
             return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(new ResponseDTO(
-                            ResponseCode.DUPLICATE_EMAIL
-                    ));
+                    .status(e.getStatusCode())
+                    .body(new ResponseDTO(code));
         }
     }
     @PostMapping("/login")

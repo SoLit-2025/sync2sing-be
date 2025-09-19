@@ -10,6 +10,7 @@ import com.solit.sync2sing.global.security.TokenProvider;
 import org.springframework.data.redis.core.RedisTemplate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.concurrent.TimeUnit;
@@ -23,6 +24,7 @@ public class LogoutServiceImplementation implements UserLogoutService {
     private final RedisTemplate<String, String> redisTemplate;
 
     @Override
+    @Transactional
     public LogoutResponseDTO logout(String accessToken, LogoutRequestDTO
             logoutRequestDTO) {
 

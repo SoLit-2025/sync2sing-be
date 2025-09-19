@@ -63,11 +63,13 @@ public class User extends BaseEntity {
     @Column(name = "pitch_note_max", nullable = false)
     private String pitchNoteMax;
 
+    @Setter
     @NotNull
     @ColumnDefault("0")
     @Column(name = "duet_penalty_count", nullable = false)
     private Integer duetPenaltyCount;
 
+    @Setter
     @Column(name = "duet_penalty_until")
     private LocalDateTime duetPenaltyUntil;
 

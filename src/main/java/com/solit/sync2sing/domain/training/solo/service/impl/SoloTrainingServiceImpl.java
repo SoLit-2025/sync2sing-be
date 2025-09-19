@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 class SoloTrainingServiceImpl extends AbstractTrainingService implements SoloTrainingService {
 
     public SoloTrainingServiceImpl(
+            UserRepository userRepository,
             TrainingSessionRepository trainingSessionRepository,
             TrainingSessionTrainingRepository trainingSessionTrainingRepository,
             RecordingRepository recordingRepository,
@@ -20,6 +21,7 @@ class SoloTrainingServiceImpl extends AbstractTrainingService implements SoloTra
     ) {
         super(
                 TrainingMode.SOLO,
+                userRepository,
                 trainingSessionRepository,
                 trainingSessionTrainingRepository,
                 recordingRepository,

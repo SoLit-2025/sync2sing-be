@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.util.S3Util;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class transcriptionService {
 
     private final S3Util s3Util;
@@ -51,13 +53,15 @@ public class transcriptionService {
 
         if (job.transcriptionJobStatus() != TranscriptionJobStatus.COMPLETED) {
             throw new ResponseStatusException(
-                    ResponseCode.INTERNAL_ERROR.getStatus(),
-                    ResponseCode.INTERNAL_ERROR.getMessage()
+                    ResponseCode.EXTERNAL_TIMEOUT.getStatus(),
+                    ResponseCode.EXTERNAL_TIMEOUT.getMessage()
             );
         }
 
         String transcriptUrl = job.transcript().transcriptFileUri();
         String transcriptText = getTranscriptText(transcriptUrl);
+
+        log.info("transcript text: {}", transcriptText);
 
         s3Util.deletetranscriptFileFromS3(transcriptUrl);
 
@@ -70,6 +74,7 @@ public class transcriptionService {
                 .media(Media.builder().mediaFileUri(mediaUri).build())
                 .mediaFormat("wav")
                 .identifyLanguage(true)
+                .languageOptions(LanguageCode.EN_US, LanguageCode.KO_KR)
                 .outputBucketName(bucket)
                 .build();
 

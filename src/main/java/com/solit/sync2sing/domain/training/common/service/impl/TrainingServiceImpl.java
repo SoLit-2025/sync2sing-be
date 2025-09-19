@@ -6,18 +6,21 @@ import com.solit.sync2sing.domain.training.common.service.TrainingService;
 import com.solit.sync2sing.entity.*;
 import com.solit.sync2sing.global.ai.dto.AiVoiceAnalysisResponse;
 import com.solit.sync2sing.global.ai.service.AiService;
-import com.solit.sync2sing.global.chatgpt.dto.SoloPostResponse;
-import com.solit.sync2sing.global.chatgpt.dto.SoloPreResponse;
-import com.solit.sync2sing.global.chatgpt.sevice.ChatGPTService;
+import com.solit.sync2sing.global.chatgpt.dto.PostResponse;
+import com.solit.sync2sing.global.chatgpt.dto.PreResponse;
+import com.solit.sync2sing.global.chatgpt.service.ChatGPTService;
 import com.solit.sync2sing.global.response.ResponseCode;
-import com.solit.sync2sing.global.security.CustomUserDetails;
 import com.solit.sync2sing.global.type.*;
+import com.solit.sync2sing.global.util.MeasureTime;
 import com.solit.sync2sing.global.util.S3Util;
 import com.solit.sync2sing.global.transcription.service.transcriptionService;
 import com.solit.sync2sing.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -26,13 +29,15 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
-class TrainingServiceImpl implements TrainingService {
+@Slf4j
+public class TrainingServiceImpl implements TrainingService {
+
+    private final TransactionTemplate transactionTemplate;
 
     private final S3Util s3Util;
 
@@ -40,6 +45,7 @@ class TrainingServiceImpl implements TrainingService {
     private final AiService aiService;
     private final ChatGPTService chatGPTService;
 
+    private final UserRepository userRepository;
     private final TrainingRepository trainingRepository;
     private final TrainingSessionRepository trainingSessionRepository;
     private final TrainingSessionTrainingRepository trainingSessionTrainingRepository;
@@ -47,10 +53,13 @@ class TrainingServiceImpl implements TrainingService {
     private final SongRepository songRepository;
     private final LyricslineRepository lyricslineRepository;
     private final VocalAnalysisReportRepository vocalAnalysisReportRepository;
+    private final RecordingRepository recordingRepository;
+    private final DuetTrainingRoomRepository duetTrainingRoomRepository;
 
     @Override
+    @Transactional
     public CurriculumListResponse generateTrainingCurriculum(
-            CustomUserDetails userDetails,
+            Long userId,
             GenerateCurriculumRequest request
     ) {
         // 1) days → count
@@ -65,7 +74,7 @@ class TrainingServiceImpl implements TrainingService {
         };
 
         // 2) 사용자 세션 조회
-        TrainingSession session = trainingSessionRepository.findByUser(userDetails.getUser()).stream()
+        TrainingSession session = trainingSessionRepository.findByUserId(userId).stream()
                 .filter(s -> s.getTrainingMode().name().equals(request.getTrainingMode()))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(
@@ -75,7 +84,7 @@ class TrainingServiceImpl implements TrainingService {
 
         // 3) 기존 UserTrainingLog 전체 조회 → Map<trainingId, UserTrainingLog>
         List<UserTrainingLog> existingLogs =
-                userTrainingLogRepository.findByUser(userDetails.getUser());
+                userTrainingLogRepository.findByUserId(userId);
         Map<Long, UserTrainingLog> logMap = existingLogs.stream()
                 .collect(Collectors.toMap(
                         log -> log.getTraining().getId(),
@@ -89,16 +98,13 @@ class TrainingServiceImpl implements TrainingService {
         List<TrainingDTO> rhythmList = pickTrainings(TrainingCategory.RHYTHM,
                 TrainingGrade.valueOf(request.getRhythm()),
                 trainingCountPerCategory, logMap);
-        List<TrainingDTO> vocalList  = pickTrainings(TrainingCategory.VOCALIZATION,
-                TrainingGrade.valueOf(request.getVocalization()),
-                trainingCountPerCategory, logMap);
-        List<TrainingDTO> breathList = pickTrainings(TrainingCategory.BREATH,
-                TrainingGrade.valueOf(request.getBreath()),
+        List<TrainingDTO> vocalList  = pickTrainings(TrainingCategory.PRONUNCIATION,
+                TrainingGrade.valueOf(request.getPronunciation()),
                 trainingCountPerCategory, logMap);
 
         // 5) UserTrainingLog 업데이트 및 저장
         List<UserTrainingLog> logsToSave = new ArrayList<>();
-        Stream.of(pitchList, rhythmList, vocalList, breathList)
+        Stream.of(pitchList, rhythmList, vocalList)
                 .flatMap(List::stream)
                 .forEach(dto -> {
                     UserTrainingLog log = logMap.get(dto.getId());
@@ -107,8 +113,14 @@ class TrainingServiceImpl implements TrainingService {
                         log.setTrainingCount(log.getTrainingCount() + 1);
                     } else {
                         // 새로 추천된 훈련은 count=1
+                        User user = userRepository.findById(userId)
+                                .orElseThrow(() -> new ResponseStatusException(
+                                        ResponseCode.USER_NOT_FOUND.getStatus(),
+                                        ResponseCode.USER_NOT_FOUND.getMessage()
+                                ));
+
                         log = UserTrainingLog.builder()
-                                .user(userDetails.getUser())
+                                .user(user)
                                 .training(
                                         trainingRepository.findById(dto.getId())
                                                 .orElseThrow(() -> new ResponseStatusException(
@@ -128,7 +140,6 @@ class TrainingServiceImpl implements TrainingService {
         toSave.addAll(buildSessionMappings(session, pitchList));
         toSave.addAll(buildSessionMappings(session, rhythmList));
         toSave.addAll(buildSessionMappings(session, vocalList));
-        toSave.addAll(buildSessionMappings(session, breathList));
         trainingSessionTrainingRepository.saveAll(toSave);
 
         // 7) 세션 상태 TRAINING_IN_PROGRESS로 변경
@@ -139,8 +150,7 @@ class TrainingServiceImpl implements TrainingService {
         return CurriculumListResponse.builder()
                 .pitch(pitchList)
                 .rhythm(rhythmList)
-                .vocalization(vocalList)
-                .breath(breathList)
+                .pronunciation(vocalList)
                 .build();
     }
 
@@ -202,11 +212,20 @@ class TrainingServiceImpl implements TrainingService {
 
 
     @Override
+    @Transactional
     public SetTrainingProgressResponse setTrainingProgress(
-            CustomUserDetails userDetails,
+            Long userId,
             SetTrainingProgressRequest request,
             Long sessionId,
             Long trainingId) {
+
+        if (request.getProgress() < 0 ||  request.getProgress() > 100) {
+            throw new ResponseStatusException(
+                    ResponseCode.INVALID_USER_INPUT.getStatus(),
+                    ResponseCode.INVALID_USER_INPUT.getMessage()
+            );
+        }
+
         TrainingSession session = trainingSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResponseStatusException(
                         ResponseCode.TRAINING_SESSION_NOT_FOUND.getStatus(),
@@ -264,13 +283,14 @@ class TrainingServiceImpl implements TrainingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public CurrentTrainingListDTO getCurrentTrainingList(
-            CustomUserDetails userDetails
+            Long userId
     ) {
         CurrentTrainingListDTO result = new CurrentTrainingListDTO();
 
         List<TrainingSession> inProgressSessions =
-                trainingSessionRepository.findByUserIdAndStatus(userDetails.getId(),
+                trainingSessionRepository.findByUserIdAndStatus(userId,
                         SessionStatus.TRAINING_IN_PROGRESS);
 
         if (inProgressSessions.isEmpty()) {
@@ -297,10 +317,10 @@ class TrainingServiceImpl implements TrainingService {
                         .isCurrentTraining(training.isCurrentTraining())
                         .build();
 
-                if ("SOLO".equals(session.getTrainingMode().name())) {
-                    result.getSolo().put(String.valueOf(t.getCategory()), ct);
+                if (session.getTrainingMode().equals(TrainingMode.SOLO)) {
+                    result.getSolo().put(String.valueOf(t.getCategory()).toLowerCase(), ct);
                 } else {
-                    result.getDuet().put(String.valueOf(t.getCategory()), ct);
+                    result.getDuet().put(String.valueOf(t.getCategory()).toLowerCase(), ct);
                 }
             }
         }
@@ -310,21 +330,18 @@ class TrainingServiceImpl implements TrainingService {
 
     @Override
     public GenerateVocalAnalysisReportResponse generateVocalAnalysisReport(
-            CustomUserDetails userDetails,
+            Long userId,
             MultipartFile vocalFile,
             GenerateVocalAnalysisReportRequest request
     ) {
-        String mode = request.getTrainingMode();
-        String type = request.getAnalysisType();
+        RecordingContext type = RecordingContext.valueOf(request.getAnalysisType());
 
-        if (type.equals("GUEST")) {
+        if (type.equals(RecordingContext.GUEST)) {
             return guestAnalysis(vocalFile, request);
-        } else if (type.equals("PRE")) {
-            return preAnalysis(vocalFile, request, userDetails);
-        } else if (mode.equals("SOLO") && type.equals("POST")) {
-            return soloPostAnalysis(vocalFile, request, userDetails);
-        } else if (mode.equals("DUET") && type.equals("POST")) {
-            return duetPostAnalysis(vocalFile, request, userDetails);
+        } else if (type.equals(RecordingContext.PRE)) {
+            return preAnalysis(vocalFile, request, userId);
+        } else if (type.equals(RecordingContext.POST)) {
+            return postAnalysis(vocalFile, request, userId);
         } else {
             throw new ResponseStatusException(
                     ResponseCode.INVALID_TRAINING_MODE_OR_ANALYSIS_TYPE.getStatus(),
@@ -337,7 +354,7 @@ class TrainingServiceImpl implements TrainingService {
             MultipartFile vocalFile,
             GenerateVocalAnalysisReportRequest request
     ) {
-        Song guestSong = songRepository.findByTitle("Do-Re-Mi")
+        Song guestSong = songRepository.findFirstByTrainingMode(TrainingMode.GUEST)
                 .orElseThrow(() ->
                         new ResponseStatusException(
                                 ResponseCode.SONG_NOT_FOUND.getStatus(),
@@ -354,8 +371,32 @@ class TrainingServiceImpl implements TrainingService {
             CompletableFuture<String> transcriptFuture = transcriptionService.transcribeAndGetText(jobName, recordingAudioS3Url);
             CompletableFuture<AiVoiceAnalysisResponse> aiFuture = aiService.analyzeWithAiServer(recordingAudioS3Url);
 
-            String transcriptText = transcriptFuture.get(60, TimeUnit.SECONDS);
-            AiVoiceAnalysisResponse aiResult = aiFuture.get(60, TimeUnit.SECONDS);
+            String transcriptText = MeasureTime.run("transcriptFuture.get",
+                    () -> {
+                        try {
+                            return transcriptFuture.get(60, TimeUnit.SECONDS);
+                        } catch (ResponseStatusException rse) {
+                            log.error("{} - {}", rse.getStatusCode(), rse.getReason(), rse);
+                            throw rse;
+
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.TRANSCRIPTION_FAIL.getStatus(),
+                                    ResponseCode.TRANSCRIPTION_FAIL.getMessage()
+                            );
+                        }
+                    });
+            AiVoiceAnalysisResponse aiResult = MeasureTime.run("aiFuture.get",
+                    () -> {
+                        try {
+                            return aiFuture.get(60, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL.getStatus(),
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL.getMessage()
+                            );
+                        }
+                    });
 
             List<String> typeList = new ArrayList<>();
             List<String> ratioList = new ArrayList<>();
@@ -368,60 +409,84 @@ class TrainingServiceImpl implements TrainingService {
                 ratioList.add(String.format("%.3f", ratio));
             }
 
-            String lyricText =
-                    "Doe, a deer, a female deer " +
-                    "Ray, a drop of golden sun";
+            String lyricText = "";
+            List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(guestSong);
+            lyricText += lines.stream()
+                    .map(Lyricsline::getText) + " ";
 
             int pronunciationScore = calculateSimilarityScore(transcriptText, lyricText);
 
-            // 호흡 평가
-            int breathScore = 60;
-
-            String userPrompt = "사용자의 음정, 박자, 발음, 호흡 점수와 사용자의 발성 유형 예측 결과 가장 확률이 높은 상위 3개 태그와 그 확률을 알려줄게.\n" +
-                    "너는 총평 제목(overallReviewTitle), 총평 내용(overallReviewContent), 총평의 원인(causeContent), 추가적인 제안(proposalContent) 4가지를 알려줘.\n" +
-                    "\n" +
-                    "아래 네 가지 항목을 JSON 형식의 문자열로 답변해줘. 다른 말은 하지 말고 오직 JSON 형식의 문자열 응답만 줘.\n" +
-                    "{\n" +
-                    "  \"overallReviewTitle\": \"\",\n" +
-                    "  \"overallReviewContent\": \"\",\n" +
-                    "  \"causeContent\": \"\",\n" +
-                    "  \"proposalContent\": \"\"\n" +
-                    "}\n" +
-                    "\n" +
-                    "공백, 특수문자 포함 아래 규칙을 지켜줘.\n" +
-                    "overall_review_title: 87Byte 이하\n" +
-                    "overall_review_content: 389Byte 이하\n" +
-                    "cause_content: 147Byte 이하\n" +
-                    "proposal_content: 147Byte 이하\n" +
-                    "\n" +
+            String userPrompt =
+                    "## 페르소나\n"
+                    + "* 역할: 10년차 보컬 트레이닝 전문가\n"
+                    + "* 대상: 음악 이론 기초 지식 미보유 초·중급 학습자\n"
+                    + "* 톤: 다정·친절·간결·구체\n"
+                    + "* 역량: 점수·태그 기반 진단, 즉시 실행 가능한 과제 제안\n"
+                    + "\n"
+                    + "## 레시피/절차 생성\n"
+                    + "* 입력해석: 3개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
+                    + "* 우선순위: 60점 미만 항목 → 60~80점 항목 → 80점 이상 항목 순\n"
+                    + "* 작성순서: 제목(한줄) → 상태요약(2~4문장) → 가능한 원인(가설) → 실행 제안(구체적 행동 지시)\n"
+                    + "\n"
+                    + "## 템플릿\n"
+                    + "* 출력형식: JSON 단일 객체, 키 추가·누락 금지, 값: 문자열\n"
+                    + "* 스키마:\n"
+                    + "{\n"
+                    + "\"overallReviewTitle\": \"\",\n"
+                    + "\"overallReviewContent\": \"\",\n"
+                    + "\"causeContent\": \"\",\n"
+                    + "\"proposalContent\": \"\"\n"
+                    + "}\n"
+                    + "* 글자수제한(공백포함):\n"
+                    + "- overallReviewTitle: 18~25글자\n"
+                    + "- overallReviewContent: 100~130글자\n"
+                    + "- causeContent: 45~65글자\n"
+                    + "- proposalContent: 50~70글자\n"
+                    + "\n"
+                    + "## 사실 점검 목록\n"
+                    + "* 점수반영: 낮은 점수→보완, 높은 점수→유지\n"
+                    + "* 태그활용: 상위태그·확률 기반, 확률 70%↑(주요특징), 40~69%(보조특징), 40%↓(언급최소화), 단정 금지·가능성 표현 적용\n"
+                    + "\n"
+                    + "## 반성/자기설명\n"
+                    + "* 이해용이성: 초·중급 눈높이, 전문용어 풀어쓰기\n"
+                    + "* 구체성: 연습법에 횟수, 시간 명시\n"
+                    + "* 권장사항: '~해요'로 문장 종결\n"
+                    + "* 금지사항: 이모지, 감탄사, 의성어, 과도한 격려, 발성 태그명과 확률 직접 제시, 3개 항목별 점수 직접 언급\n"
+                    + "\n"
+                    + "## 인지 검증자\n"
+                    + "* JSON검증: 3개 키 존재, 모든 값은 문자열 타입\n"
+                    + "* 길이검증: 각 필드별 글자수 제한 준수 (초과시 핵심 중심 간결화 재시도)\n"
+                    + "* (초과시)축약규칙: 부사·수식어 → 중복 문구 → 예시 순 제거\n"
+                    + "* 언어검증: 한국어만 사용\n"
+                    + "\n"
+                    + "## 컨텍스트 관리자\n"
+                    + "* 필수입력: 음정·박자·발음 점수 + 발성태그TOP3(확률%)\n"
+                    + "* 예외처리: 결측값은 해당 항목 언급 생략\n"
+                    + "* 분석기준: 최저점수 항목을 중심으로 원인과 해결책 도출\n"
+                    + "* 출력규칙: 반드시 JSON만 반환, 코드블록·주석·줄바꿈·백틱·설명문·마크다운 금지, 한국어 고정\n"
+                    + "* 준수사항: 위 템플릿·제한·절차 절대 준수, 입력값 외 추론 금지"
+                    + "\n"
+                    + "## 입력\n" +
                     "음정 점수: " + request.getPitchAccuracy() + "\n" +
                     "박자 점수: " + request.getBeatAccuracy() + "\n" +
                     "발음 점수: " + pronunciationScore + "\n" +
-                    "호흡 점수: " + breathScore + "\n" +
                     "발성 태그와 예측 확률: " + "\n" +
                     typeList.get(0) + " " + ratioList.get(0) + "\n" +
                     typeList.get(1) + " " + ratioList.get(1) + "\n" +
-                    typeList.get(2) + " " + ratioList.get(2) + "\n" +
-                    "다음은 너의 답변 예시를 알려줄게.\n" +
-                    "\n" +
-                    "{\n" +
-                    "  \"overallReviewTitle\": \"호흡이 큰 장점이지만, 음정과 박자에 안정이 필요해요\",\n" +
-                    "  \"overallReviewContent\": \"호흡 조절은 잘하고 계시지만, 음정과 박자가 불안정하여 노래의 화성 구조를 충분히 표현하지 못하고 있어요. 발성은 중간 정도로 괜찮지만, 정확한 음정과 리듬을 통해 전체적인 완성도를 높일 필요가 있습니다.\",\n" +
-                    "  \"causeContent\": \"코드 변화를 정확히 인지하지 못해 화성 진행에 따른 음의 변화를 자연스럽게 표현하기 어려워요.\",\n" +
-                    "  \"proposalContent\": \"주요 코드(C, F, G)의 느낌을 익히고, 단순한 발성 연습부터 시작해 듣기 훈련을 병행하세요.\"\n" +
-                    "}";
+                    typeList.get(2) + " " + ratioList.get(2) + "\n"
+                    ;
 
-            String gptResponse = chatGPTService.askToGpt(userPrompt);
+            String gptResponse = MeasureTime.run("askToGpt", () -> chatGPTService.askToGpt(userPrompt));
 
             gptResponse = gptResponse.replaceAll("```json|```", "").trim();
 
             ObjectMapper objectMapper = new ObjectMapper();
-            SoloPreResponse soloPreResponse = objectMapper.readValue(gptResponse, SoloPreResponse.class);
+            PreResponse preResponse = objectMapper.readValue(gptResponse, PreResponse.class);
 
-            String overallReviewTitle = soloPreResponse.getOverallReviewTitle();
-            String overallReviewContent = soloPreResponse.getOverallReviewContent();
-            String causeContent = soloPreResponse.getCauseContent();
-            String proposalContent = soloPreResponse.getProposalContent();
+            String overallReviewTitle = preResponse.getOverallReviewTitle();
+            String overallReviewContent = preResponse.getOverallReviewContent();
+            String causeContent = preResponse.getCauseContent();
+            String proposalContent = preResponse.getProposalContent();
 
             s3Util.deleteFileFromS3(recordingAudioS3Url);
 
@@ -433,22 +498,30 @@ class TrainingServiceImpl implements TrainingService {
                     .pitchScore(request.getPitchAccuracy())
                     .beatScore(request.getBeatAccuracy())
                     .pronunciationScore(pronunciationScore)
-                    .breathScore(breathScore)
                     .overallReviewTitle(overallReviewTitle)
                     .overallReviewContent(overallReviewContent)
                     .causeContent(causeContent)
                     .proposalContent(proposalContent)
                     .build();
 
-            vocalAnalysisReportRepository.save(vocalAnalysisReport);
+            transactionTemplate.executeWithoutResult(status ->
+                vocalAnalysisReportRepository.save(vocalAnalysisReport)
+            );
 
             return PreVocalAnalysisReportResponse.toDTO(vocalAnalysisReport);
+        } catch (ResponseStatusException rse) {
+            if (recordingAudioS3Url != null) s3Util.deleteFileFromS3(recordingAudioS3Url);
+
+            log.error("{} - {}", rse.getStatusCode(), rse.getReason(), rse);
+            throw rse;
+
         } catch (Exception e) {
             if (recordingAudioS3Url != null) s3Util.deleteFileFromS3(recordingAudioS3Url);
 
+            log.error("guestAnalysis 예상치 못한 예외 발생", e);
             throw new ResponseStatusException(
-                    ResponseCode.FILE_UPLOAD_FAIL_S3_ROLLBACK.getStatus(),
-                    ResponseCode.FILE_UPLOAD_FAIL_S3_ROLLBACK.getMessage()
+                    ResponseCode.INTERNAL_ERROR.getStatus(),
+                    ResponseCode.INTERNAL_ERROR.getMessage()
             );
         }
     }
@@ -456,17 +529,19 @@ class TrainingServiceImpl implements TrainingService {
     private PreVocalAnalysisReportResponse preAnalysis(
             MultipartFile vocalFile,
             GenerateVocalAnalysisReportRequest request,
-            CustomUserDetails userDetails
+            Long userId
     ) {
+        TrainingMode trainingMode = TrainingMode.valueOf(request.getTrainingMode());
+
         // 사용자 세션 곡 조회
-        TrainingSession session = trainingSessionRepository.findByUser(userDetails.getUser()).stream()
-                .filter(s -> s.getTrainingMode().name().equals(request.getTrainingMode()))
+        TrainingSession session = trainingSessionRepository.findByUserId(userId).stream()
+                .filter(s -> s.getTrainingMode().equals(trainingMode))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(
                         ResponseCode.TRAINING_SESSION_NOT_FOUND.getStatus(),
                         ResponseCode.TRAINING_SESSION_NOT_FOUND.getMessage()
                 ));
-        Song trsiningSong = session.getSong();
+        Song trainingSong = session.getSong();
 
         String recordingAudioS3Url = null;
 
@@ -477,8 +552,28 @@ class TrainingServiceImpl implements TrainingService {
             CompletableFuture<String> transcriptFuture = transcriptionService.transcribeAndGetText(jobName, recordingAudioS3Url);
             CompletableFuture<AiVoiceAnalysisResponse> aiFuture = aiService.analyzeWithAiServer(recordingAudioS3Url);
 
-            String transcriptText = transcriptFuture.get(60, TimeUnit.SECONDS);
-            AiVoiceAnalysisResponse aiResult = aiFuture.get(60, TimeUnit.SECONDS);
+            String transcriptText = MeasureTime.run("transcriptFuture.get",
+                    () -> {
+                        try {
+                            return transcriptFuture.get(60, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.TRANSCRIPTION_FAIL.getStatus(),
+                                    ResponseCode.TRANSCRIPTION_FAIL.getMessage()
+                            );
+                        }
+                    });
+            AiVoiceAnalysisResponse aiResult = MeasureTime.run("aiFuture.get",
+                    () -> {
+                        try {
+                            return aiFuture.get(60, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL.getStatus(),
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL.getMessage()
+                            );
+                        }
+                    });
 
             List<String> typeList = new ArrayList<>();
             List<String> ratioList = new ArrayList<>();
@@ -491,112 +586,191 @@ class TrainingServiceImpl implements TrainingService {
                 ratioList.add(String.format("%.3f", ratio));
             }
 
-            // 전체 가사 조회
-            List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(trsiningSong);
             String lyricText = "";
-            lyricText += lines.stream()
-                    .map(Lyricsline::getText) + " ";
+            if (trainingMode.equals(TrainingMode.SOLO)) {
+                // 전체 가사 조회
+                List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(trainingSong);
+                lyricText += lines.stream()
+                        .map(Lyricsline::getText) + " ";
+            } else if (trainingMode.equals(TrainingMode.DUET)) {
+                // 파트별 가사 조회
+                DuetSongPart duetSongPart;
+                Optional<DuetTrainingRoom> duetTrainingRoomOpt = duetTrainingRoomRepository.findByHostTrainingSession(session);
+                if (duetTrainingRoomOpt.isPresent()) {
+                    duetSongPart = duetTrainingRoomOpt.get().getHostUserPart();
+                } else {
+                    DuetTrainingRoom duetTrainingRoom = duetTrainingRoomRepository.findByPartnerTrainingSession(session)
+                            .orElseThrow(() -> new ResponseStatusException(
+                                    ResponseCode.DUET_TRAINING_ROOM_NOT_FOUND.getStatus(),
+                                    ResponseCode.DUET_TRAINING_ROOM_NOT_FOUND.getMessage()
+                            ));
+                    duetSongPart = duetTrainingRoom.getPartnerUserPart();
+                }
+
+                List<Lyricsline> lines = lyricslineRepository.findByDuetSongPart(duetSongPart);
+                lyricText += lines.stream()
+                        .map(Lyricsline::getText) + " ";
+            }
 
             int pronunciationScore = calculateSimilarityScore(transcriptText, lyricText);
 
-            // 호흡 평가
-            int breathScore = 60;
-
-            String userPrompt = "사용자의 음정, 박자, 발음, 호흡 점수와 사용자의 발성 유형 예측 결과 가장 확률이 높은 상위 3개 태그와 그 확률을 알려줄게.\n" +
-                    "너는 총평 제목(overallReviewTitle), 총평 내용(overallReviewContent), 총평의 원인(causeContent), 추가적인 제안(proposalContent) 4가지를 알려줘.\n" +
-                    "\n" +
-                    "아래 네 가지 항목을 JSON 형식의 문자열로 답변해줘. 다른 말은 하지 말고 오직 JSON 형식의 문자열 응답만 줘.\n" +
-                    "{\n" +
-                    "  \"overallReviewTitle\": \"\",\n" +
-                    "  \"overallReviewContent\": \"\",\n" +
-                    "  \"causeContent\": \"\",\n" +
-                    "  \"proposalContent\": \"\"\n" +
-                    "}\n" +
-                    "\n" +
-                    "공백, 특수문자 포함 아래 규칙을 지켜줘.\n" +
-                    "overall_review_title: 87Byte 이하\n" +
-                    "overall_review_content: 389Byte 이하\n" +
-                    "cause_content: 147Byte 이하\n" +
-                    "proposal_content: 147Byte 이하\n" +
-                    "\n" +
+            String userPrompt =
+                    "## 페르소나\n"
+                    + "* 역할: 10년차 보컬 트레이닝 전문가\n"
+                    + "* 대상: 음악 이론 기초 지식 미보유 초·중급 학습자\n"
+                    + "* 톤: 다정·친절·간결·구체\n"
+                    + "* 역량: 점수·태그 기반 진단, 즉시 실행 가능한 과제 제안\n"
+                    + "\n"
+                    + "## 레시피/절차 생성\n"
+                    + "* 입력해석: 3개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
+                    + "* 우선순위: 60점 미만 항목 → 60~80점 항목 → 80점 이상 항목 순\n"
+                    + "* 작성순서: 제목(한줄) → 상태요약(2~4문장) → 가능한 원인(가설) → 실행 제안(구체적 행동 지시)\n"
+                    + "\n"
+                    + "## 템플릿\n"
+                    + "* 출력형식: JSON 단일 객체, 키 추가·누락 금지, 값: 문자열\n"
+                    + "* 스키마:\n"
+                    + "{\n"
+                    + "\"overallReviewTitle\": \"\",\n"
+                    + "\"overallReviewContent\": \"\",\n"
+                    + "\"causeContent\": \"\",\n"
+                    + "\"proposalContent\": \"\"\n"
+                    + "}\n"
+                    + "* 글자수제한(공백포함):\n"
+                    + "- overallReviewTitle: 18~25글자\n"
+                    + "- overallReviewContent: 100~130글자\n"
+                    + "- causeContent: 45~65글자\n"
+                    + "- proposalContent: 50~70글자\n"
+                    + "\n"
+                    + "## 사실 점검 목록\n"
+                    + "* 점수반영: 낮은 점수→보완, 높은 점수→유지\n"
+                    + "* 태그활용: 상위태그·확률 기반, 확률 70%↑(주요특징), 40~69%(보조특징), 40%↓(언급최소화), 단정 금지·가능성 표현 적용\n"
+                    + "\n"
+                    + "## 반성/자기설명\n"
+                    + "* 이해용이성: 초·중급 눈높이, 전문용어 풀어쓰기\n"
+                    + "* 구체성: 연습법에 횟수, 시간 명시\n"
+                    + "* 권장사항: '~해요'로 문장 종결\n"
+                    + "* 금지사항: 이모지, 감탄사, 의성어, 과도한 격려, 발성 태그명과 확률 직접 제시, 3개 항목별 점수 직접 언급\n"
+                    + "\n"
+                    + "## 인지 검증자\n"
+                    + "* JSON검증: 3개 키 존재, 모든 값은 문자열 타입\n"
+                    + "* 길이검증: 각 필드별 글자수 제한 준수 (초과시 핵심 중심 간결화 재시도)\n"
+                    + "* (초과시)축약규칙: 부사·수식어 → 중복 문구 → 예시 순 제거\n"
+                    + "* 언어검증: 한국어만 사용\n"
+                    + "\n"
+                    + "## 컨텍스트 관리자\n"
+                    + "* 필수입력: 음정·박자·발음 점수 + 발성태그TOP3(확률%)\n"
+                    + "* 예외처리: 결측값은 해당 항목 언급 생략\n"
+                    + "* 분석기준: 최저점수 항목을 중심으로 원인과 해결책 도출\n"
+                    + "* 출력규칙: 반드시 JSON만 반환, 코드블록·주석·줄바꿈·백틱·설명문·마크다운 금지, 한국어 고정\n"
+                    + "* 준수사항: 위 템플릿·제한·절차 절대 준수, 입력값 외 추론 금지"
+                    + "\n"
+                    + "## 입력\n" +
                     "음정 점수: " + request.getPitchAccuracy() + "\n" +
                     "박자 점수: " + request.getBeatAccuracy() + "\n" +
                     "발음 점수: " + pronunciationScore + "\n" +
-                    "호흡 점수: " + breathScore + "\n" +
                     "발성 태그와 예측 확률: " + "\n" +
                     typeList.get(0) + " " + ratioList.get(0) + "\n" +
                     typeList.get(1) + " " + ratioList.get(1) + "\n" +
-                    typeList.get(2) + " " + ratioList.get(2) + "\n" +
-                    "다음은 너의 답변 예시를 알려줄게.\n" +
-                    "\n" +
-                    "{\n" +
-                    "  \"overallReviewTitle\": \"호흡이 큰 장점이지만, 음정과 박자에 안정이 필요해요\",\n" +
-                    "  \"overallReviewContent\": \"호흡 조절은 잘하고 계시지만, 음정과 박자가 불안정하여 노래의 화성 구조를 충분히 표현하지 못하고 있어요. 발성은 중간 정도로 괜찮지만, 정확한 음정과 리듬을 통해 전체적인 완성도를 높일 필요가 있습니다.\",\n" +
-                    "  \"causeContent\": \"코드 변화를 정확히 인지하지 못해 화성 진행에 따른 음의 변화를 자연스럽게 표현하기 어려워요.\",\n" +
-                    "  \"proposalContent\": \"주요 코드(C, F, G)의 느낌을 익히고, 단순한 발성 연습부터 시작해 듣기 훈련을 병행하세요.\"\n" +
-                    "}";
+                    typeList.get(2) + " " + ratioList.get(2) + "\n"
+                    ;
 
-            String gptResponse = chatGPTService.askToGpt(userPrompt);
+            String gptResponse = MeasureTime.run("askToGpt", () -> chatGPTService.askToGpt(userPrompt));
 
             gptResponse = gptResponse.replaceAll("```json|```", "").trim();
 
             ObjectMapper objectMapper = new ObjectMapper();
-            SoloPreResponse soloPreResponse = objectMapper.readValue(gptResponse, SoloPreResponse.class);
+            PreResponse preResponse = objectMapper.readValue(gptResponse, PreResponse.class);
 
-            String overallReviewTitle = soloPreResponse.getOverallReviewTitle();
-            String overallReviewContent = soloPreResponse.getOverallReviewContent();
-            String causeContent = soloPreResponse.getCauseContent();
-            String proposalContent = soloPreResponse.getProposalContent();
+            String overallReviewTitle = preResponse.getOverallReviewTitle();
+            String overallReviewContent = preResponse.getOverallReviewContent();
+            String causeContent = preResponse.getCauseContent();
+            String proposalContent = preResponse.getProposalContent();
 
-            s3Util.deleteFileFromS3(recordingAudioS3Url);
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            ResponseCode.USER_NOT_FOUND.getStatus(),
+                            ResponseCode.USER_NOT_FOUND.getMessage()
+                    ));
 
             VocalAnalysisReport vocalAnalysisReport = VocalAnalysisReport.builder()
-                    .song(trsiningSong)
-                    .title(vocalAnalysisReportTitle(trsiningSong.getTitle()))
-                    .trainingMode(TrainingMode.SOLO)
+                    .user(user)
+                    .song(trainingSong)
+                    .title(vocalAnalysisReportTitle(trainingSong.getTitle()))
+                    .trainingMode(trainingMode)
                     .reportType(RecordingContext.PRE)
                     .pitchScore(request.getPitchAccuracy())
                     .beatScore(request.getBeatAccuracy())
                     .pronunciationScore(pronunciationScore)
-                    .breathScore(breathScore)
                     .overallReviewTitle(overallReviewTitle)
                     .overallReviewContent(overallReviewContent)
                     .causeContent(causeContent)
                     .proposalContent(proposalContent)
                     .build();
 
-            vocalAnalysisReportRepository.save(vocalAnalysisReport);
+            transactionTemplate.executeWithoutResult(status ->
+                    vocalAnalysisReportRepository.save(vocalAnalysisReport)
+            );
+
+            if (trainingMode.equals(TrainingMode.SOLO)) {
+                s3Util.deleteFileFromS3(recordingAudioS3Url);
+            } else if (trainingMode.equals(TrainingMode.DUET)) {
+                AudioFile preAudioFile = AudioFile.builder()
+                        .fileName(vocalFile.getOriginalFilename())
+                        .fileUrl(recordingAudioS3Url)
+                        .build();
+
+                Recording preRecording = Recording.builder()
+                        .audioFile(preAudioFile)
+                        .trainingSession(session)
+                        .vocalAnalysisReport(vocalAnalysisReport)
+                        .recordingFormat(RecordingFormat.SINGLE)
+                        .recordingPhase(RecordingContext.PRE)
+                        .build();
+
+                transactionTemplate.executeWithoutResult(status ->
+                        recordingRepository.save(preRecording)
+                );
+            }
 
             return PreVocalAnalysisReportResponse.toDTO(vocalAnalysisReport);
+        } catch (ResponseStatusException rse) {
+            if (recordingAudioS3Url != null) s3Util.deleteFileFromS3(recordingAudioS3Url);
+
+            log.error("{} - {}", rse.getStatusCode(), rse.getReason(), rse);
+            throw rse;
+
         } catch (Exception e) {
             if (recordingAudioS3Url != null) s3Util.deleteFileFromS3(recordingAudioS3Url);
 
+            log.error("preAnalysis 예상치 못한 예외 발생", e);
             throw new ResponseStatusException(
-                    ResponseCode.FILE_UPLOAD_FAIL_S3_ROLLBACK.getStatus(),
-                    ResponseCode.FILE_UPLOAD_FAIL_S3_ROLLBACK.getMessage()
+                    ResponseCode.INTERNAL_ERROR.getStatus(),
+                    ResponseCode.INTERNAL_ERROR.getMessage()
             );
         }
     }
 
-    private GenerateVocalAnalysisReportResponse soloPostAnalysis(
+    private GenerateVocalAnalysisReportResponse postAnalysis(
             MultipartFile vocalFile,
             GenerateVocalAnalysisReportRequest request,
-            CustomUserDetails userDetails
+            Long userId
     ) {
+        TrainingMode trainingMode = TrainingMode.valueOf(request.getTrainingMode());
+
         // 사용자 세션 곡 조회
-        TrainingSession session = trainingSessionRepository.findByUser(userDetails.getUser()).stream()
-                .filter(s -> s.getTrainingMode().name().equals(request.getTrainingMode()))
+        TrainingSession session = trainingSessionRepository.findByUserId(userId).stream()
+                .filter(s -> s.getTrainingMode().equals(trainingMode))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(
                         ResponseCode.TRAINING_SESSION_NOT_FOUND.getStatus(),
                         ResponseCode.TRAINING_SESSION_NOT_FOUND.getMessage()
                 ));
-        Song trsiningSong = session.getSong();
+        Song trainingSong = session.getSong();
 
         // 훈련 전 보컬분석리포트
         VocalAnalysisReport preReport = vocalAnalysisReportRepository
                 .findTopBySongAndTrainingModeAndReportTypeOrderByCreatedAtDesc(
-                        trsiningSong, TrainingMode.SOLO, RecordingContext.PRE
+                        trainingSong, trainingMode, RecordingContext.PRE
                 )
                 .orElse(null);
 
@@ -609,8 +783,253 @@ class TrainingServiceImpl implements TrainingService {
             CompletableFuture<String> transcriptFuture = transcriptionService.transcribeAndGetText(jobName, recordingAudioS3Url);
             CompletableFuture<AiVoiceAnalysisResponse> aiFuture = aiService.analyzeWithAiServer(recordingAudioS3Url);
 
-            String transcriptText = transcriptFuture.get(60, TimeUnit.SECONDS);
-            AiVoiceAnalysisResponse aiResult = aiFuture.get(60, TimeUnit.SECONDS);
+            String transcriptText = MeasureTime.run("transcriptFuture.get",
+                    () -> {
+                        try {
+                            return transcriptFuture.get(60, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.TRANSCRIPTION_FAIL.getStatus(),
+                                    ResponseCode.TRANSCRIPTION_FAIL.getMessage()
+                            );
+                        }
+                    });
+            AiVoiceAnalysisResponse aiResult = MeasureTime.run("aiFuture.get",
+                    () -> {
+                        try {
+                            return aiFuture.get(60, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL.getStatus(),
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL.getMessage()
+                            );
+                        }
+                    });
+
+            List<String> typeList = new ArrayList<>();
+            List<String> ratioList = new ArrayList<>();
+
+            for (int i = 0; i < aiResult.getData().getTop_voice_types().size(); i++) {
+                String type = aiResult.getData().getTop_voice_types().get(i).getType();
+                Double ratio = aiResult.getData().getTop_voice_types().get(i).getRatio();
+
+                typeList.add(type);
+                ratioList.add(String.format("%.3f", ratio));
+            }
+
+            String lyricText = "";
+            if (trainingMode.equals(TrainingMode.SOLO)) {
+                // 전체 가사 조회
+                List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(trainingSong);
+                lyricText += lines.stream()
+                        .map(Lyricsline::getText) + " ";
+            } else if (trainingMode.equals(TrainingMode.DUET)) {
+                // 파트별 가사 조회
+                DuetSongPart duetSongPart;
+                Optional<DuetTrainingRoom> duetTrainingRoomOpt = duetTrainingRoomRepository.findByHostTrainingSession(session);
+                if (duetTrainingRoomOpt.isPresent()) {
+                    duetSongPart = duetTrainingRoomOpt.get().getHostUserPart();
+                } else {
+                    DuetTrainingRoom duetTrainingRoom = duetTrainingRoomRepository.findByPartnerTrainingSession(session)
+                            .orElseThrow(() -> new ResponseStatusException(
+                                    ResponseCode.DUET_TRAINING_ROOM_NOT_FOUND.getStatus(),
+                                    ResponseCode.DUET_TRAINING_ROOM_NOT_FOUND.getMessage()
+                            ));
+                    duetSongPart = duetTrainingRoom.getPartnerUserPart();
+                }
+
+                List<Lyricsline> lines = lyricslineRepository.findByDuetSongPart(duetSongPart);
+                lyricText += lines.stream()
+                        .map(Lyricsline::getText) + " ";
+            }
+
+            int pronunciationScore = calculateSimilarityScore(transcriptText, lyricText);
+
+            String userPrompt =
+                    "## 페르소나\n"
+                    + "* 역할: 10년차 보컬 트레이닝 전문가\n"
+                    + "* 대상: 음악 이론 기초 지식 미보유 초·중급 학습자\n"
+                    + "* 톤: 다정·친절·간결·구체\n"
+                    + "* 역량: 점수·태그 기반 진단, 즉시 실행 가능한 과제 제안\n"
+                    + "\n"
+                    + "## 레시피/절차 생성\n"
+                    + "* 입력해석: 3개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
+                    + "* 우선순위: 60점 미만 항목 → 60~80점 항목 → 80점 이상 항목 순\n"
+                    + "* 작성순서: 훈련 후 보컬에 대한 총평 제목(한 줄) → 상태요약(1~3문장) → 훈련 전후 차이에 대한 피드백 제목(한 줄) → 피드백 내용(구체적 행동 지시)\n"
+                    + "\n"
+                    + "## 템플릿\n"
+                    + "* 출력형식: JSON 단일 객체, 키 추가·누락 금지, 값: 문자열\n"
+                    + "* 스키마:\n"
+                    + "{\n"
+                    + "\"overallReviewTitle\": \"\",\n"
+                    + "\"overallReviewContent\": \"\",\n"
+                    + "\"feedbackTitle\": \"\",\n"
+                    + "\"feedbackContent\": \"\"\n"
+                    + "}\n"
+                    + "* 글자수제한(공백포함):\n"
+                    + "- overallReviewTitle: 18~25글자\n"
+                    + "- overallReviewContent: 100~130글자\n"
+                    + "- feedbackTitle: 18~25글자\n"
+                    + "- feedbackContent: 100~130글자\n"
+                    + "\n"
+                    + "## 사실 점검 목록\n"
+                    + "* 점수반영: 낮은 점수→보완, 높은 점수→유지\n"
+                    + "* 태그활용: 상위태그·확률 기반, 확률 70%↑(주요특징), 40~69%(보조특징), 40%↓(언급최소화), 단정 금지·가능성 표현 적용\n"
+                    + "\n"
+                    + "## 반성/자기설명\n"
+                    + "* 이해용이성: 초·중급 눈높이, 전문용어 풀어쓰기\n"
+                    + "* 구체성: 연습법에 횟수, 시간 명시\n"
+                    + "* 권장사항: '~해요'로 문장 종결\n"
+                    + "* 금지사항: 이모지, 감탄사, 의성어, 과도한 격려, 발성 태그명과 확률 직접 제시, 3개 항목별 점수 직접 언급\n"
+                    + "\n"
+                    + "## 인지 검증자\n"
+                    + "* JSON검증: 3개 키 존재, 모든 값은 문자열 타입\n"
+                    + "* 길이검증: 각 필드별 글자수 제한 준수 (초과시 핵심 중심 간결화 재시도)\n"
+                    + "* (초과시)축약규칙: 부사·수식어 → 중복 문구 → 예시 순 제거\n"
+                    + "* 언어검증: 한국어만 사용\n"
+                    + "\n"
+                    + "## 컨텍스트 관리자\n"
+                    + "* 필수입력: 음정·박자·발음 점수 + 발성태그TOP3(확률%)\n"
+                    + "* 예외처리: 결측값은 해당 항목 언급 생략\n"
+                    + "* 분석기준: 최저점수 항목을 중심으로 원인과 해결책 도출\n"
+                    + "* 출력규칙: 반드시 JSON만 반환, 코드블록·주석·줄바꿈·백틱·설명문·마크다운 금지, 한국어 고정\n"
+                    + "* 준수사항: 위 템플릿·제한·절차 절대 준수, 입력값 외 추론 금지"
+                    + "\n"
+                    + "## 입력\n" +
+                    "훈련 전 음정 점수: " + preReport.getPitchScore() + "\n" +
+                    "훈련 전 박자 점수: " + preReport.getBeatScore() + "\n" +
+                    "훈련 전 발음 점수: " + preReport.getPronunciationScore() + "\n" +
+                    "훈련 후 음정 점수: " + request.getPitchAccuracy() + "\n" +
+                    "훈련 후 박자 점수: " + request.getBeatAccuracy() + "\n" +
+                    "훈련 후 발음 점수: " + pronunciationScore + "\n" +
+                    "훈련 후 발성 태그와 예측 확률: " + "\n" +
+                    typeList.get(0) + " " + ratioList.get(0) + "\n" +
+                    typeList.get(1) + " " + ratioList.get(1) + "\n" +
+                    typeList.get(2) + " " + ratioList.get(2) + "\n"
+                    ;
+
+            String gptResponse = MeasureTime.run("askToGpt", () -> chatGPTService.askToGpt(userPrompt));
+
+            gptResponse = gptResponse.replaceAll("```json|```", "").trim();
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            PostResponse postResponse = objectMapper.readValue(gptResponse, PostResponse.class);
+
+            String overallReviewTitle = postResponse.getOverallReviewTitle();
+            String overallReviewContent = postResponse.getOverallReviewContent();
+            String feedbackTitle = postResponse.getFeedbackTitle();
+            String feedbackContent = postResponse.getFeedbackContent();
+
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            ResponseCode.USER_NOT_FOUND.getStatus(),
+                            ResponseCode.USER_NOT_FOUND.getMessage()
+                    ));
+
+            VocalAnalysisReport vocalAnalysisReport = VocalAnalysisReport.builder()
+                    .user(user)
+                    .song(trainingSong)
+                    .title(vocalAnalysisReportTitle(trainingSong.getTitle()))
+                    .trainingMode(trainingMode)
+                    .reportType(RecordingContext.POST)
+                    .pitchScore(request.getPitchAccuracy())
+                    .beatScore(request.getBeatAccuracy())
+                    .pronunciationScore(pronunciationScore)
+                    .overallReviewTitle(overallReviewTitle)
+                    .overallReviewContent(overallReviewContent)
+                    .feedbackTitle(feedbackTitle)
+                    .feedbackContent(feedbackContent)
+                    .preTrainingReport(preReport)
+                    .build();
+
+            transactionTemplate.executeWithoutResult(status ->
+                    vocalAnalysisReportRepository.save(vocalAnalysisReport)
+            );
+
+            if (trainingMode.equals(TrainingMode.SOLO)) {
+                s3Util.deleteFileFromS3(recordingAudioS3Url);
+            } else if (trainingMode.equals(TrainingMode.DUET)) {
+                AudioFile postAudioFile = AudioFile.builder()
+                        .fileName(vocalFile.getOriginalFilename())
+                        .fileUrl(recordingAudioS3Url)
+                        .build();
+
+                Recording postRecording = Recording.builder()
+                        .audioFile(postAudioFile)
+                        .trainingSession(session)
+                        .vocalAnalysisReport(vocalAnalysisReport)
+                        .recordingFormat(RecordingFormat.SINGLE)
+                        .recordingPhase(RecordingContext.POST)
+                        .build();
+
+                transactionTemplate.executeWithoutResult(status ->
+                        recordingRepository.save(postRecording)
+                );
+            }
+
+            return PostVocalAnalysisReportResponse.toDTO(vocalAnalysisReport);
+        } catch (ResponseStatusException rse) {
+            if (recordingAudioS3Url != null) s3Util.deleteFileFromS3(recordingAudioS3Url);
+
+            log.error("{} - {}", rse.getStatusCode(), rse.getReason(), rse);
+            throw rse;
+
+        } catch (Exception e) {
+            if (recordingAudioS3Url != null) s3Util.deleteFileFromS3(recordingAudioS3Url);
+
+            log.error("postAnalysis 예상치 못한 예외 발생", e);
+            throw new ResponseStatusException(
+                    ResponseCode.INTERNAL_ERROR.getStatus(),
+                    ResponseCode.INTERNAL_ERROR.getMessage()
+            );
+        }
+    }
+
+    public GenerateVocalAnalysisReportResponse duetMergedAnalysis(
+            String recordingAudioS3Url,
+            GenerateVocalAnalysisReportRequest request,
+            Long userId
+    ) {
+        TrainingMode trainingMode = TrainingMode.DUET;
+
+        // 사용자 세션 곡 조회
+        TrainingSession session = trainingSessionRepository.findByUserId(userId).stream()
+                .filter(s -> s.getTrainingMode().equals(trainingMode))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(
+                        ResponseCode.TRAINING_SESSION_NOT_FOUND.getStatus(),
+                        ResponseCode.TRAINING_SESSION_NOT_FOUND.getMessage()
+                ));
+        Song trainingSong = session.getSong();
+
+        try {
+            String jobName = "transcripts_job-" + UUID.randomUUID();
+
+            CompletableFuture<String> transcriptFuture = transcriptionService.transcribeAndGetText(jobName, recordingAudioS3Url);
+            CompletableFuture<AiVoiceAnalysisResponse> aiFuture = aiService.analyzeWithAiServer(recordingAudioS3Url);
+
+            String transcriptText = MeasureTime.run("transcriptFuture.get",
+                    () -> {
+                        try {
+                            return transcriptFuture.get(60, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.TRANSCRIPTION_FAIL.getStatus(),
+                                    ResponseCode.TRANSCRIPTION_FAIL.getMessage()
+                            );
+                        }
+                    });
+            AiVoiceAnalysisResponse aiResult = MeasureTime.run("aiFuture.get",
+                    () -> {
+                        try {
+                            return aiFuture.get(60, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL.getStatus(),
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL.getMessage()
+                            );
+                        }
+                    });
 
             List<String> typeList = new ArrayList<>();
             List<String> ratioList = new ArrayList<>();
@@ -624,111 +1043,128 @@ class TrainingServiceImpl implements TrainingService {
             }
 
             // 전체 가사 조회
-            List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(trsiningSong);
+            List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(trainingSong);
             String lyricText = "";
             lyricText += lines.stream()
                     .map(Lyricsline::getText) + " ";
 
             int pronunciationScore = calculateSimilarityScore(transcriptText, lyricText);
 
-            // 호흡 평가
-            int breathScore = 60;
+            String userPrompt =
+                    "## 페르소나\n"
+                            + "* 역할: 10년차 보컬 트레이닝 전문가\n"
+                            + "* 대상: 음악 이론 기초 지식 미보유 초·중급 학습자\n"
+                            + "* 톤: 다정·친절·간결·구체\n"
+                            + "* 역량: 점수·태그 기반 진단, 즉시 실행 가능한 과제 제안\n"
+                            + "\n"
+                            + "## 레시피/절차 생성\n"
+                            + "* 입력해석: 3개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
+                            + "* 우선순위: 60점 미만 항목 → 60~80점 항목 → 80점 이상 항목 순\n"
+                            + "* 작성순서: 제목(한줄) → 상태요약(2~4문장) → 듀엣 궁합 피드백 → 파트너와의 조화를 위주로 피드백\n"
+                            + "\n"
+                            + "## 템플릿\n"
+                            + "* 출력형식: JSON 단일 객체, 키 추가·누락 금지, 값: 문자열\n"
+                            + "* 스키마:\n"
+                            + "{\n"
+                            + "\"overallReviewTitle\": \"\",\n"
+                            + "\"overallReviewContent\": \"\",\n"
+                            + "\"feedbackTitle\": \"\",\n"
+                            + "\"feedbackContent\": \"\"\n"
+                            + "}\n"
+                            + "* 글자수제한(공백포함):\n"
+                            + "- overallReviewTitle: 18~25글자\n"
+                            + "- overallReviewContent: 100~130글자\n"
+                            + "- feedbackTitle: 18~25글자\n"
+                            + "- feedbackContent: 100~130글자\n"
+                            + "\n"
+                            + "## 사실 점검 목록\n"
+                            + "* 점수반영: 낮은 점수→보완, 높은 점수→유지\n"
+                            + "* 태그활용: 상위태그·확률 기반, 확률 70%↑(주요특징), 40~69%(보조특징), 40%↓(언급최소화), 단정 금지·가능성 표현 적용\n"
+                            + "\n"
+                            + "## 반성/자기설명\n"
+                            + "* 이해용이성: 초·중급 눈높이, 전문용어 풀어쓰기\n"
+                            + "* 구체성: 연습법에 횟수, 시간 명시\n"
+                            + "* 권장사항: '~해요'로 문장 종결\n"
+                            + "* 금지사항: 이모지, 감탄사, 의성어, 과도한 격려, 발성 태그명과 확률 직접 제시, 3개 항목별 점수 직접 언급\n"
+                            + "\n"
+                            + "## 인지 검증자\n"
+                            + "* JSON검증: 3개 키 존재, 모든 값은 문자열 타입\n"
+                            + "* 길이검증: 각 필드별 글자수 제한 준수 (초과시 핵심 중심 간결화 재시도)\n"
+                            + "* (초과시)축약규칙: 부사·수식어 → 중복 문구 → 예시 순 제거\n"
+                            + "* 언어검증: 한국어만 사용\n"
+                            + "\n"
+                            + "## 컨텍스트 관리자\n"
+                            + "* 필수입력: 음정·박자·발음 점수 + 발성태그TOP3(확률%)\n"
+                            + "* 예외처리: 결측값은 해당 항목 언급 생략\n"
+                            + "* 분석기준: 최저점수 항목을 중심으로 원인과 해결책 도출\n"
+                            + "* 출력규칙: 반드시 JSON만 반환, 코드블록·주석·줄바꿈·백틱·설명문·마크다운 금지, 한국어 고정\n"
+                            + "* 준수사항: 위 템플릿·제한·절차 절대 준수, 입력값 외 추론 금지"
+                            + "\n"
+                            + "## 입력\n" +
+                            "음정 점수: " + request.getPitchAccuracy() + "\n" +
+                            "박자 점수: " + request.getBeatAccuracy() + "\n" +
+                            "발음 점수: " + pronunciationScore + "\n" +
+                            "발성 태그와 예측 확률: " + "\n" +
+                            typeList.get(0) + " " + ratioList.get(0) + "\n" +
+                            typeList.get(1) + " " + ratioList.get(1) + "\n" +
+                            typeList.get(2) + " " + ratioList.get(2) + "\n"
+                    ;
 
-            String userPrompt = "사용자의 보컬 훈련 전과 훈련 후의 각 음정, 박자, 발음, 호흡 점수와 훈련 후 사용자의 발성 유형 예측 결과 가장 확률이 높은 상위 3개 태그와 그 확률을 알려줄게.\n" +
-                    "너는 훈련 후 보컬에 대한 총평 제목(overallReviewTitle), 총평 내용(overallReviewContent), 훈련 전후 차이에 대한 피드백 제목(feedbackTitle), 피드백 내용(feedbackContent) 4가지를 알려줘.\n" +
-                    "\n" +
-                    "아래 네 가지 항목을 JSON 형식의 문자열로 답변해줘. 다른 말은 하지 말고 오직 JSON 형식의 문자열 응답만 줘.\n" +
-                    "{\n" +
-                    "  \"overallReviewTitle\": \"\",\n" +
-                    "  \"overallReviewContent\": \"\",\n" +
-                    "  \"feedbackTitle\": \"\",\n" +
-                    "  \"feedbackContent\": \"\"\n" +
-                    "}\n" +
-                    "\n" +
-                    "공백, 특수문자 포함 아래 규칙을 지켜줘.\n" +
-                    "overall_review_title: 87Byte 이하\n" +
-                    "overall_review_content: 389Byte 이하\n" +
-                    "feedback_title: 87Byte 이하\n" +
-                    "feedback_content: 389Byte 이하\n" +
-                    "\n" +
-                    "훈련 전 음정 점수: " + preReport.getPitchScore() + "\n" +
-                    "훈련 전 박자 점수: " + preReport.getBeatScore() + "\n" +
-                    "훈련 전 발음 점수: " + preReport.getPronunciationScore() + "\n" +
-                    "훈련 전 호흡 점수: " + preReport.getBreathScore() + "\n" +
-                    "훈련 후 음정 점수: " + request.getPitchAccuracy() + "\n" +
-                    "훈련 후 박자 점수: " + request.getBeatAccuracy() + "\n" +
-                    "훈련 후 발음 점수: " + pronunciationScore + "\n" +
-                    "훈련 후 호흡 점수: " + breathScore + "\n" +
-                    "훈련 후 발성 태그와 예측 확률: " + "\n" +
-                    typeList.get(0) + " " + ratioList.get(0) + "\n" +
-                    typeList.get(1) + " " + ratioList.get(1) + "\n" +
-                    typeList.get(2) + " " + ratioList.get(2) + "\n" +
-                    "다음은 너의 답변 예시를 알려줄게.\n" +
-                    "\n" +
-                    "{\n" +
-                    "  \"overallReviewTitle\": \"호흡이 큰 장점이지만, 음정과 박자에 안정이 필요해요\",\n" +
-                    "  \"overallReviewContent\": \"호흡 조절은 잘하고 계시지만, 음정과 박자가 불안정하여 노래의 화성 구조를 충분히 표현하지 못하고 있어요. 발성은 중간 정도로 괜찮지만, 정확한 음정과 리듬을 통해 전체적인 완성도를 높일 필요가 있습니다.\",\n" +
-                    "  \"feedbackTitle\": \"꾸준함의 힘, 눈에 띄는 성장\",\n" +
-                    "  \"feedbackContent\": \"전반적인 퍼포먼스가 크게 향상되었습니다. 훈련 진행률 85%를 달성하였으며, 꾸준한 연습을 통해 더욱 발전할 수 있습니다.\"\n" +
-                    "}";
-
-            String gptResponse = chatGPTService.askToGpt(userPrompt);
+            String gptResponse = MeasureTime.run("askToGpt", () -> chatGPTService.askToGpt(userPrompt));
 
             gptResponse = gptResponse.replaceAll("```json|```", "").trim();
 
             ObjectMapper objectMapper = new ObjectMapper();
-            SoloPostResponse soloPostResponse = objectMapper.readValue(gptResponse, SoloPostResponse.class);
+            PostResponse postResponse = objectMapper.readValue(gptResponse, PostResponse.class);
 
-            String overallReviewTitle = soloPostResponse.getOverallReviewTitle();
-            String overallReviewContent = soloPostResponse.getOverallReviewContent();
-            String feedbackTitle = soloPostResponse.getFeedbackTitle();
-            String feedbackContent = soloPostResponse.getFeedbackContent();
+            String overallReviewTitle = postResponse.getOverallReviewTitle();
+            String overallReviewContent = postResponse.getOverallReviewContent();
+            String feedbackTitle = postResponse.getFeedbackTitle();
+            String feedbackContent = postResponse.getFeedbackContent();
 
-            s3Util.deleteFileFromS3(recordingAudioS3Url);
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            ResponseCode.USER_NOT_FOUND.getStatus(),
+                            ResponseCode.USER_NOT_FOUND.getMessage()
+                    ));
 
             VocalAnalysisReport vocalAnalysisReport = VocalAnalysisReport.builder()
-                    .song(trsiningSong)
-                    .title(vocalAnalysisReportTitle(trsiningSong.getTitle()))
-                    .trainingMode(TrainingMode.SOLO)
-                    .reportType(RecordingContext.POST)
+                    .user(user)
+                    .song(trainingSong)
+                    .title(vocalAnalysisReportTitle(trainingSong.getTitle()))
+                    .trainingMode(trainingMode)
+                    .reportType(RecordingContext.valueOf(request.getAnalysisType()))
                     .pitchScore(request.getPitchAccuracy())
                     .beatScore(request.getBeatAccuracy())
                     .pronunciationScore(pronunciationScore)
-                    .breathScore(breathScore)
                     .overallReviewTitle(overallReviewTitle)
                     .overallReviewContent(overallReviewContent)
                     .feedbackTitle(feedbackTitle)
                     .feedbackContent(feedbackContent)
-                    .preTrainingReport(preReport)
                     .build();
 
-            vocalAnalysisReportRepository.save(vocalAnalysisReport);
+            transactionTemplate.executeWithoutResult(status ->
+                    vocalAnalysisReportRepository.save(vocalAnalysisReport)
+            );
 
-            return PostVocalAnalysisReportResponse.toDTO(vocalAnalysisReport);
+            return DuetMergedVocalAnalysisReportResponse.toDTO(vocalAnalysisReport);
+        } catch (ResponseStatusException rse) {
+            log.error("{} - {}", rse.getStatusCode(), rse.getReason(), rse);
+            throw rse;
+
         } catch (Exception e) {
-            if (recordingAudioS3Url != null) s3Util.deleteFileFromS3(recordingAudioS3Url);
-
+            log.error("duetMergedAnalysis 예상치 못한 예외 발생", e);
             throw new ResponseStatusException(
-                    ResponseCode.FILE_UPLOAD_FAIL_S3_ROLLBACK.getStatus(),
-                    ResponseCode.FILE_UPLOAD_FAIL_S3_ROLLBACK.getMessage()
+                    ResponseCode.INTERNAL_ERROR.getStatus(),
+                    ResponseCode.INTERNAL_ERROR.getMessage()
             );
         }
-    }
-
-    private GenerateVocalAnalysisReportResponse duetPostAnalysis(
-            MultipartFile vocalFile,
-            GenerateVocalAnalysisReportRequest request,
-            CustomUserDetails userDetails
-    ) {
-        return null;
     }
 
     private String vocalAnalysisReportTitle(String songTitle) {
         String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         return date + " " + songTitle;
     }
-
-
 
     public int calculateSimilarityScore(String sttText, String reference) {
         LevenshteinDistance ld = new LevenshteinDistance();

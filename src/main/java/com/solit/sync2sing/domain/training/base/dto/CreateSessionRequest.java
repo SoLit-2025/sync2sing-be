@@ -11,6 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateSessionRequest {
     private Long songId;
-    private Integer keyAdjustment;
     private Integer trainingDays;
 }

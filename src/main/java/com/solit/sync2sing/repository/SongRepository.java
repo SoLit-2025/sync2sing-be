@@ -8,6 +8,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface SongRepository extends JpaRepository<Song, Long> {
-    Optional<Song> findByTitle(String title);
+    Optional<Song> findFirstByTrainingMode(TrainingMode trainingMode);
     List<Song> findByTrainingMode(TrainingMode trainingMode);
 }
