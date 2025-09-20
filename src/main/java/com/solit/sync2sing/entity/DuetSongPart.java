@@ -9,6 +9,9 @@ import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -23,7 +26,6 @@ public class DuetSongPart extends BaseEntity {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "song_id", nullable = false)
     private Song song;
 
@@ -48,5 +50,12 @@ public class DuetSongPart extends BaseEntity {
     @NotNull
     @Column(name = "pitch_note_max", nullable = false, length = 10)
     private String pitchNoteMax;
+
+    @OneToMany(
+            mappedBy = "duetSongPart",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<Lyricsline> lines = new ArrayList<>();
 
 }

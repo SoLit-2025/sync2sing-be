@@ -8,6 +8,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -59,5 +62,19 @@ public class Song extends BaseEntity {
 
     @Column(name = "pitch_note_max", length = 10)
     private String pitchNoteMax;
+
+    @OneToMany(
+            mappedBy = "song",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<DuetSongPart> duetSongParts = new ArrayList<>();
+
+    @OneToMany(
+            mappedBy = "song",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<Lyricsline> lines = new ArrayList<>();
 
 }
