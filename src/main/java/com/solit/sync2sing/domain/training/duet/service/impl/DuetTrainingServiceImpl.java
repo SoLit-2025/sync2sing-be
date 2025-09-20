@@ -114,6 +114,27 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
 
         for (DuetTrainingRoom room : rooms) {
             if (room.getHost().getId().equals(userId)) {
+                DuetSongPart hostPartEntity = room.getHostUserPart();
+                DuetSongPart partnerPartEntity = room.getPartnerUserPart();
+
+                DuetTrainingRoomListResponse.DuetPartDTO hostPartDTO =
+                        DuetTrainingRoomListResponse.DuetPartDTO.builder()
+                                .partNumber(hostPartEntity.getPartNumber())
+                                .partName(hostPartEntity.getPartName())
+                                .voiceType(hostPartEntity.getVoiceType().name())
+                                .pitchNoteMin(hostPartEntity.getPitchNoteMin())
+                                .pitchNoteMax(hostPartEntity.getPitchNoteMax())
+                                .build();
+
+                DuetTrainingRoomListResponse.DuetPartDTO partnerPartDTO =
+                        DuetTrainingRoomListResponse.DuetPartDTO.builder()
+                                .partNumber(partnerPartEntity.getPartNumber())
+                                .partName(partnerPartEntity.getPartName())
+                                .voiceType(partnerPartEntity.getVoiceType().name())
+                                .pitchNoteMin(partnerPartEntity.getPitchNoteMin())
+                                .pitchNoteMax(partnerPartEntity.getPitchNoteMax())
+                                .build();
+
                 myRoomDto = DuetTrainingRoomListResponse.DuetTrainingRoomDto.builder()
                         .id(room.getId())
                         .createdAt(room.getCreatedAt())
@@ -128,10 +149,8 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
                                                 : null
                                 )
                                 .build())
-                        .hostPartNumber(room.getHostUserPart().getPartNumber())
-                        .hostPartName(room.getHostUserPart().getPartName())
-                        .partnerPartNumber(room.getPartnerUserPart().getPartNumber())
-                        .partnerPartName(room.getPartnerUserPart().getPartName())
+                        .hostPart(hostPartDTO)
+                        .partnerPart(partnerPartDTO)
                         .build();
             } else {
                 otherRooms.add(room);
@@ -140,25 +159,46 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
 
 
         List<DuetTrainingRoomListResponse.DuetTrainingRoomDto> roomList = otherRooms.stream()
-                .map(r -> DuetTrainingRoomListResponse.DuetTrainingRoomDto.builder()
-                        .id(r.getId())
-                        .createdAt(r.getCreatedAt())
-                        .trainingDays(r.getCurriculumDays())
-                        .song(DuetTrainingRoomListResponse.SongDTO.builder()
-                                .id(r.getSong().getId())
-                                .title(r.getSong().getTitle())
-                                .artist(r.getSong().getArtist())
-                                .albumArtUrl(
-                                        r.getSong().getAlbumCoverFile() != null
-                                                ? r.getSong().getAlbumCoverFile().getFileUrl()
-                                                : null
-                                )
-                                .build())
-                        .hostPartNumber(r.getHostUserPart().getPartNumber())
-                        .hostPartName(r.getHostUserPart().getPartName())
-                        .partnerPartNumber(r.getPartnerUserPart().getPartNumber())
-                        .partnerPartName(r.getPartnerUserPart().getPartName())
-                        .build())
+                .map(r -> {
+                    DuetSongPart hostPartEntity = r.getHostUserPart();
+                    DuetSongPart partnerPartEntity = r.getPartnerUserPart();
+
+                    DuetTrainingRoomListResponse.DuetPartDTO hostPartDTO =
+                            DuetTrainingRoomListResponse.DuetPartDTO.builder()
+                                    .partNumber(hostPartEntity.getPartNumber())
+                                    .partName(hostPartEntity.getPartName())
+                                    .voiceType(hostPartEntity.getVoiceType().name())
+                                    .pitchNoteMin(hostPartEntity.getPitchNoteMin())
+                                    .pitchNoteMax(hostPartEntity.getPitchNoteMax())
+                                    .build();
+
+                    DuetTrainingRoomListResponse.DuetPartDTO partnerPartDTO =
+                            DuetTrainingRoomListResponse.DuetPartDTO.builder()
+                                    .partNumber(partnerPartEntity.getPartNumber())
+                                    .partName(partnerPartEntity.getPartName())
+                                    .voiceType(partnerPartEntity.getVoiceType().name())
+                                    .pitchNoteMin(partnerPartEntity.getPitchNoteMin())
+                                    .pitchNoteMax(partnerPartEntity.getPitchNoteMax())
+                                    .build();
+
+                    return DuetTrainingRoomListResponse.DuetTrainingRoomDto.builder()
+                            .id(r.getId())
+                            .createdAt(r.getCreatedAt())
+                            .trainingDays(r.getCurriculumDays())
+                            .song(DuetTrainingRoomListResponse.SongDTO.builder()
+                                    .id(r.getSong().getId())
+                                    .title(r.getSong().getTitle())
+                                    .artist(r.getSong().getArtist())
+                                    .albumArtUrl(
+                                            r.getSong().getAlbumCoverFile() != null
+                                                    ? r.getSong().getAlbumCoverFile().getFileUrl()
+                                                    : null
+                                    )
+                                    .build())
+                            .hostPart(hostPartDTO)
+                            .partnerPart(partnerPartDTO)
+                            .build();
+                })
                 .toList();
 
         return DuetTrainingRoomListResponse.builder()
@@ -225,15 +265,34 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
                 .albumArtUrl(song.getAlbumCoverFile() != null ? song.getAlbumCoverFile().getFileUrl() : null)
                 .build();
 
+        DuetSongPart hostPartEntity = room.getHostUserPart();
+        DuetSongPart partnerPartEntity = room.getPartnerUserPart();
+
+        DuetTrainingRoomListResponse.DuetPartDTO hostPartDTO =
+                DuetTrainingRoomListResponse.DuetPartDTO.builder()
+                        .partNumber(hostPartEntity.getPartNumber())
+                        .partName(hostPartEntity.getPartName())
+                        .voiceType(hostPartEntity.getVoiceType().name())
+                        .pitchNoteMin(hostPartEntity.getPitchNoteMin())
+                        .pitchNoteMax(hostPartEntity.getPitchNoteMax())
+                        .build();
+
+        DuetTrainingRoomListResponse.DuetPartDTO partnerPartDTO =
+                DuetTrainingRoomListResponse.DuetPartDTO.builder()
+                        .partNumber(partnerPartEntity.getPartNumber())
+                        .partName(partnerPartEntity.getPartName())
+                        .voiceType(partnerPartEntity.getVoiceType().name())
+                        .pitchNoteMin(partnerPartEntity.getPitchNoteMin())
+                        .pitchNoteMax(partnerPartEntity.getPitchNoteMax())
+                        .build();
+
         return DuetTrainingRoomListResponse.DuetTrainingRoomDto.builder()
                 .id(room.getId())
                 .createdAt(room.getCreatedAt())
                 .trainingDays(room.getCurriculumDays())
                 .song(songDto)
-                .hostPartNumber(room.getHostUserPart().getPartNumber())
-                .hostPartName(room.getHostUserPart().getPartName())
-                .partnerPartNumber(room.getPartnerUserPart().getPartNumber())
-                .partnerPartName(room.getPartnerUserPart().getPartName())
+                .hostPart(hostPartDTO)
+                .partnerPart(partnerPartDTO)
                 .build();
     }
 

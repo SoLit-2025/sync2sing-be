@@ -120,14 +120,33 @@ public abstract class AbstractTrainingService {
                 return Optional.empty();
             }
 
+            DuetSongPart hostPartEntity = room.getHostUserPart();
+            DuetSongPart partnerPartEntity = room.getPartnerUserPart();
+
+            DuetTrainingRoomListResponse.DuetPartDTO hostPartDTO =
+                    DuetTrainingRoomListResponse.DuetPartDTO.builder()
+                            .partNumber(hostPartEntity.getPartNumber())
+                            .partName(hostPartEntity.getPartName())
+                            .voiceType(hostPartEntity.getVoiceType().name())
+                            .pitchNoteMin(hostPartEntity.getPitchNoteMin())
+                            .pitchNoteMax(hostPartEntity.getPitchNoteMax())
+                            .build();
+
+            DuetTrainingRoomListResponse.DuetPartDTO partnerPartDTO =
+                    DuetTrainingRoomListResponse.DuetPartDTO.builder()
+                            .partNumber(partnerPartEntity.getPartNumber())
+                            .partName(partnerPartEntity.getPartName())
+                            .voiceType(partnerPartEntity.getVoiceType().name())
+                            .pitchNoteMin(partnerPartEntity.getPitchNoteMin())
+                            .pitchNoteMax(partnerPartEntity.getPitchNoteMax())
+                            .build();
+
             DuetTrainingRoomDtoB = DuetTrainingRoomListResponse.DuetTrainingRoomDto.builder()
                     .id(room.getId())
                     .createdAt(room.getCreatedAt())
                     .trainingDays(room.getCurriculumDays())
-                    .hostPartNumber(room.getHostUserPart().getPartNumber())
-                    .hostPartName(room.getHostUserPart().getPartName())
-                    .partnerPartNumber(room.getPartnerUserPart().getPartNumber())
-                    .partnerPartName(room.getPartnerUserPart().getPartName());
+                    .hostPart(hostPartDTO)
+                    .partnerPart(partnerPartDTO);
         }
 
         SongListDTO.SongDTO songDTO = songB.build();

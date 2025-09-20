@@ -31,13 +31,9 @@ public class DuetTrainingRoomListResponse {
 
         private SongDTO song;
 
-        private Integer hostPartNumber;
+        private DuetPartDTO hostPart;
 
-        private String hostPartName;
-
-        private Integer partnerPartNumber;
-
-        private String partnerPartName;
+        private DuetPartDTO partnerPart;
     }
 
     @Getter
@@ -53,5 +49,22 @@ public class DuetTrainingRoomListResponse {
         private String artist;
 
         private String albumArtUrl;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class DuetPartDTO {
+
+        private Integer partNumber;
+
+        private String partName;
+
+        private String voiceType;
+
+        private String pitchNoteMin;
+
+        private String pitchNoteMax;
     }
 }
