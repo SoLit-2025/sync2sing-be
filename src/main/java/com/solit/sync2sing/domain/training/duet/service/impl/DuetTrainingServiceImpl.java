@@ -218,6 +218,13 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
             );
         }
 
+        if (duetTrainingRoomRepository.findByHostId(userId).isPresent()) {
+            throw new ResponseStatusException(
+                    ResponseCode.DUET_TRAINING_ROOM_ALREADY_EXIST.getStatus(),
+                    ResponseCode.DUET_TRAINING_ROOM_ALREADY_EXIST.getMessage()
+            );
+        }
+
         Song song = songRepository.findById(request.getSongId())
                 .orElseThrow(() -> new ResponseStatusException(
                         ResponseCode.SONG_NOT_FOUND.getStatus(),
