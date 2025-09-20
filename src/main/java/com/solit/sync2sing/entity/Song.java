@@ -51,16 +51,13 @@ public class Song extends BaseEntity {
     private String artist;
 
     @Enumerated(EnumType.STRING)
-    @NotNull
-    @Column(name = "voice_type", nullable = false, length = 50)
+    @Column(name = "voice_type", length = 50)
     private VoiceType voiceType;
 
-    @NotNull
-    @Column(name = "pitch_note_min", nullable = false)
+    @Column(name = "pitch_note_min", length = 10)
     private String pitchNoteMin;
 
-    @NotNull
-    @Column(name = "pitch_note_max", nullable = false)
+    @Column(name = "pitch_note_max", length = 10)
     private String pitchNoteMax;
 
 }

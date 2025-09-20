@@ -1,6 +1,7 @@
 package com.solit.sync2sing.entity;
 
 import com.solit.sync2sing.global.entity.BaseEntity;
+import com.solit.sync2sing.global.type.VoiceType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -34,5 +35,18 @@ public class DuetSongPart extends BaseEntity {
     @NotNull
     @Column(name = "part_name", nullable = false)
     private String partName;
+
+    @Enumerated(EnumType.STRING)
+    @NotNull
+    @Column(name = "voice_type", nullable = false, length = 50)
+    private VoiceType voiceType;
+
+    @NotNull
+    @Column(name = "pitch_note_min", nullable = false, length = 10)
+    private String pitchNoteMin;
+
+    @NotNull
+    @Column(name = "pitch_note_max", nullable = false, length = 10)
+    private String pitchNoteMax;
 
 }

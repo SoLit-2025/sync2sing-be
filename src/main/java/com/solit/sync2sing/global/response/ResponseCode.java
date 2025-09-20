@@ -94,7 +94,8 @@ public enum ResponseCode {
 
     ADMIN_SOLOSONG_UPLOADED(HttpStatus.CREATED, "솔로곡 업로드에 성공했습니다."),
     ADMIN_DUETSONG_UPLOADED(HttpStatus.CREATED, "듀엣곡 업로드에 성공했습니다."),
-    INVALID_DUET_PART_COUNT(HttpStatus.BAD_REQUEST, "듀엣곡은 고유한 파트 이름을 최대 2개까지만 가질 수 있습니다."),
+    INVALID_DUET_PART_COUNT(HttpStatus.BAD_REQUEST, "듀엣곡은 파트를 최대 2개까지만 가질 수 있습니다."),
+    INVALID_DUET_PART_NUMBER(HttpStatus.BAD_REQUEST, "듀엣곡 part_number는 반드시 0 또는 1이어야 합니다."),
     ADMIN_SONG_DELETED(HttpStatus.OK, "곡 삭제에 성공했습니다."),
     SONG_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 곡을 찾을 수 없습니다."),
     EMPTY_FILE_EXCEPTION(HttpStatus.BAD_REQUEST, "파일이 비어 있습니다."),
