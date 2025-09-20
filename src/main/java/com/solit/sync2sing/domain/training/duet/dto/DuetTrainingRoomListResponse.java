@@ -14,7 +14,9 @@ import java.util.List;
 @AllArgsConstructor
 public class DuetTrainingRoomListResponse {
 
-    private List<DuetTrainingRoomListResponse.DuetTrainingRoomDto> roomList;
+    private DuetTrainingRoomDto myRoom;
+
+    private List<DuetTrainingRoomDto> roomList;
 
     @Getter
     @Builder

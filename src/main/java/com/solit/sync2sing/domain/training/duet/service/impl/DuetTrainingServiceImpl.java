@@ -20,8 +20,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 public class DuetTrainingServiceImpl extends AbstractTrainingService implements DuetTrainingService {
@@ -103,13 +103,43 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
 
     @Override
     @Transactional(readOnly = true)
-    public DuetTrainingRoomListResponse getRoomList() {
+    public DuetTrainingRoomListResponse getRoomList(Long userId) {
         List<DuetTrainingRoom> rooms =
                 duetTrainingRoomRepository.findAllByStatusOrderByCreatedAtDesc(
                         DuetTrainingRoomStatus.PENDING
                 );
 
-        List<DuetTrainingRoomListResponse.DuetTrainingRoomDto> items = rooms.stream()
+        List<DuetTrainingRoom> otherRooms = new ArrayList<>();
+        DuetTrainingRoomListResponse.DuetTrainingRoomDto myRoomDto = null;
+
+        for (DuetTrainingRoom room : rooms) {
+            if (room.getHost().getId().equals(userId)) {
+                myRoomDto = DuetTrainingRoomListResponse.DuetTrainingRoomDto.builder()
+                        .id(room.getId())
+                        .createdAt(room.getCreatedAt())
+                        .trainingDays(room.getCurriculumDays())
+                        .song(DuetTrainingRoomListResponse.SongDTO.builder()
+                                .id(room.getSong().getId())
+                                .title(room.getSong().getTitle())
+                                .artist(room.getSong().getArtist())
+                                .albumArtUrl(
+                                        room.getSong().getAlbumCoverFile() != null
+                                                ? room.getSong().getAlbumCoverFile().getFileUrl()
+                                                : null
+                                )
+                                .build())
+                        .hostPartNumber(room.getHostUserPart().getPartNumber())
+                        .hostPartName(room.getHostUserPart().getPartName())
+                        .partnerPartNumber(room.getPartnerUserPart().getPartNumber())
+                        .partnerPartName(room.getPartnerUserPart().getPartName())
+                        .build();
+            } else {
+                otherRooms.add(room);
+            }
+        }
+
+
+        List<DuetTrainingRoomListResponse.DuetTrainingRoomDto> roomList = otherRooms.stream()
                 .map(r -> DuetTrainingRoomListResponse.DuetTrainingRoomDto.builder()
                         .id(r.getId())
                         .createdAt(r.getCreatedAt())
@@ -132,7 +162,8 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
                 .toList();
 
         return DuetTrainingRoomListResponse.builder()
-                .roomList(items)
+                .myRoom(myRoomDto)
+                .roomList(roomList)
                 .build();
     }
 
