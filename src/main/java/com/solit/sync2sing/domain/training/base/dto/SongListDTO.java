@@ -28,6 +28,7 @@ public class SongListDTO {
         private Long id;
         private String title;
         private String artist;
+        private String youtubeLink;
 
         // 솔로곡 목록 DTO에만 사용되는 필드
         private String voiceType;

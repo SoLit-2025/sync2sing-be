@@ -23,6 +23,9 @@ public class AdminDuetSongUploadRequest {
     private String artist;
 
     @NotNull
+    private String youtubeLink;
+
+    @NotNull
     @Valid
     private List<DuetPartDTO> duetParts;
 

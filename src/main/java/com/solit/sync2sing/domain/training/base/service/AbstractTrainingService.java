@@ -333,7 +333,8 @@ public abstract class AbstractTrainingService {
             SongListDTO.SongDTO.SongDTOBuilder songDTOBuilder = SongListDTO.SongDTO.builder()
                     .id(song.getId())
                     .title(song.getTitle())
-                    .artist(song.getArtist());
+                    .artist(song.getArtist())
+                    .youtubeLink(song.getYoutubeLink());
 
             if (trainingMode == TrainingMode.SOLO) {
                 songDTOBuilder
@@ -423,7 +424,8 @@ public abstract class AbstractTrainingService {
         SongListDTO.SongDTO.SongDTOBuilder songDTOBuilder = SongListDTO.SongDTO.builder()
                 .id(song.getId())
                 .title(song.getTitle())
-                .artist(song.getArtist());
+                .artist(song.getArtist())
+                .youtubeLink(song.getYoutubeLink());
 
         if (trainingMode == TrainingMode.SOLO) {
             songDTOBuilder

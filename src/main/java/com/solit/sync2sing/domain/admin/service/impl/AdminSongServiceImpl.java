@@ -70,6 +70,7 @@ public class AdminSongServiceImpl implements AdminSongService {
                     .trainingMode(TrainingMode.valueOf(request.getTrainingMode()))
                     .title(request.getTitle())
                     .artist(request.getArtist())
+                    .youtubeLink(request.getYoutubeLink())
                     .voiceType(VoiceType.valueOf(request.getVoiceType()))
                     .pitchNoteMin(request.getPitchNoteMin())
                     .pitchNoteMax(request.getPitchNoteMax())
@@ -154,6 +155,7 @@ public class AdminSongServiceImpl implements AdminSongService {
                     .trainingMode(TrainingMode.DUET)
                     .title(request.getTitle())
                     .artist(request.getArtist())
+                    .youtubeLink(request.getYoutubeLink())
                     .build();
             songRepository.save(song);
 

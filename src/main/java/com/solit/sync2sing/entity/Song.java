@@ -53,6 +53,10 @@ public class Song extends BaseEntity {
     @Column(name = "artist", nullable = false)
     private String artist;
 
+    @Size(max = 255)
+    @Column(name = "youtube_link")
+    private String youtubeLink;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "voice_type", length = 50)
     private VoiceType voiceType;
