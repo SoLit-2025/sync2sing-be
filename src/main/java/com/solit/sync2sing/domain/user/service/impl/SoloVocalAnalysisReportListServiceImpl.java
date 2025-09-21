@@ -61,8 +61,6 @@ public class SoloVocalAnalysisReportListServiceImpl implements SoloVocalAnalysis
                 .collect(Collectors.toList());
 
         return SoloVocalAnalysisReportListResponseDTO.builder()
-                .status(ResponseCode.SOLO_VOCAL_ANALYSIS_REPORT_LIST_FETCHED.getStatus().value())
-                .message(ResponseCode.SOLO_VOCAL_ANALYSIS_REPORT_LIST_FETCHED.getMessage())
                 .data(mergedList)
                 .build();
     }

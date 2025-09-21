@@ -14,9 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 public class SoloVocalAnalysisReportListResponseDTO {
 
-    private int status;
-    private String message;
-
+    @JsonProperty("solo_report_list")
     private List<SoloVocalAnalysisReportSummary> data;
 
     @Getter
