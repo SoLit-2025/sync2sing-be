@@ -5,12 +5,7 @@ import com.solit.sync2sing.domain.user.dto.request.LogoutRequestDTO;
 import com.solit.sync2sing.domain.user.dto.request.SignupRequestDTO;
 import com.solit.sync2sing.domain.user.dto.response.*;
 import com.solit.sync2sing.domain.user.dto.request.UserInfoUpdateRequestDTO;
-import com.solit.sync2sing.domain.user.service.UserInfoUpdateService;
-import com.solit.sync2sing.domain.user.service.SoloVocalAnalysisReportListService;
-import com.solit.sync2sing.domain.user.service.UserLoginService;
-import com.solit.sync2sing.domain.user.service.UserLogoutService;
-import com.solit.sync2sing.domain.user.service.UserSignupService;
-import com.solit.sync2sing.domain.user.service.UserInfoService;
+import com.solit.sync2sing.domain.user.service.*;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.response.ResponseDTO;
 import com.solit.sync2sing.global.util.SecurityUtil;
@@ -39,6 +34,7 @@ public class UserController {
     private final UserInfoUpdateService userInfoUpdateService;
     private final UserInfoService userInfoService;
     private final SoloVocalAnalysisReportListService soloVocalAnalysisReportListService;
+    private final DuetVocalAnalysisReportListService duetVocalAnalysisReportListService;
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
@@ -47,13 +43,15 @@ public class UserController {
                           UserLogoutService userLogoutService,
                           UserInfoUpdateService userInfoUpdateService,
                           UserInfoService userInfoService,
-                          SoloVocalAnalysisReportListService soloVocalAnalysisReportListService) {
+                          SoloVocalAnalysisReportListService soloVocalAnalysisReportListService,
+                          DuetVocalAnalysisReportListService duetVocalAnalysisReportListService) {
         this.userSignupService = userSignupService;
         this.userLoginService = userLoginService;
         this.userLogoutService = userLogoutService;
         this.userInfoUpdateService = userInfoUpdateService;
         this.userInfoService = userInfoService;
         this.soloVocalAnalysisReportListService = soloVocalAnalysisReportListService;
+        this.duetVocalAnalysisReportListService = duetVocalAnalysisReportListService;
     }
 
     @PostMapping("/signup")
@@ -175,30 +173,39 @@ public class UserController {
     }
 
     @GetMapping("/reports")
-    public ResponseEntity<ResponseDTO<SoloVocalAnalysisReportListResponseDTO>> getSoloReportList(
+    public ResponseEntity<ResponseDTO<?>> getReportList(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam(required = true) String mode)
-    {
+            @RequestParam(required = true) String mode) {
 
         try {
-            if(!"solo".equalsIgnoreCase(mode)){
-                return ResponseEntity.badRequest()
-                        .body(new ResponseDTO<>(ResponseCode.INVALID_REQUEST));
-            }
             if(userDetails == null){
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(new ResponseDTO<>(ResponseCode.UNAUTHORIZED));
             }
 
-            SoloVocalAnalysisReportListResponseDTO responseData =
-                    soloVocalAnalysisReportListService.getSoloVocalAnalysisReportList(userDetails);
+            if("solo".equalsIgnoreCase(mode)){
+                SoloVocalAnalysisReportListResponseDTO responseData =
+                        soloVocalAnalysisReportListService.getSoloVocalAnalysisReportList(userDetails);
 
-            return ResponseEntity.ok(
-                    new ResponseDTO<>(ResponseCode.SOLO_VOCAL_ANALYSIS_REPORT_LIST_FETCHED, responseData)
-            );
+                return ResponseEntity.ok(
+                        new ResponseDTO<>(ResponseCode.SOLO_VOCAL_ANALYSIS_REPORT_LIST_FETCHED, responseData)
+                );
+
+            } else if("duet".equalsIgnoreCase(mode)) {
+                DuetVocalAnalysisReportListResponseDTO responseData =
+                        duetVocalAnalysisReportListService.getDuetVocalAnalysisReportList(userDetails);
+
+                return ResponseEntity.ok(
+                        new ResponseDTO<>(ResponseCode.DUET_VOCAL_ANALYSIS_REPORT_LIST_FETCHED, responseData)
+                );
+
+            } else {
+                return ResponseEntity.badRequest()
+                        .body(new ResponseDTO<>(ResponseCode.INVALID_REQUEST));
+            }
 
         } catch (Exception e) {
-            logger.error("API 호출 중 오류 발생 - 코드: {}, 메시지: {}, 예외: {}",
+            logger.error("리포트 목록 API 호출 중 오류 발생 - 코드: {}, 메시지: {}, 예외: {}",
                     ResponseCode.INTERNAL_ERROR.name(),
                     ResponseCode.INTERNAL_ERROR.getMessage(),
                     e.getMessage(), e);

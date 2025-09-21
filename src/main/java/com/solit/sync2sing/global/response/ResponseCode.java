@@ -68,6 +68,7 @@ public enum ResponseCode {
     DUET_CURRENT_TRAINING_EMPTY(HttpStatus.NO_CONTENT, "진행 중인 트레이닝이 없습니다."),
     DUET_TRAINING_PROGRESS_UPDATED(HttpStatus.OK, "듀엣 트레이닝 진행 상황 업데이트에 성공했습니다."),
     AUDIO_MERGE_FAILED(HttpStatus.BAD_GATEWAY, "오디오 파일 병합 실패. 다시 시도해 주세요."),
+    DUET_VOCAL_ANALYSIS_REPORT_LIST_FETCHED(HttpStatus.OK, "듀엣 보컬 분석 리포트 목록 조회에 성공했습니다."),
 
     SIGNUP_SUCCESS(HttpStatus.CREATED, "회원가입에 성공했습니다."),
     DUPLICATE_USERNAME(HttpStatus.BAD_REQUEST, "이미 사용 중인 아이디입니다."),
