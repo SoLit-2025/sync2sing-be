@@ -1,12 +1,16 @@
 package com.solit.sync2sing.entity;
 
 import com.solit.sync2sing.global.entity.BaseEntity;
+import com.solit.sync2sing.global.type.VoiceType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Builder
@@ -22,7 +26,6 @@ public class DuetSongPart extends BaseEntity {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "song_id", nullable = false)
     private Song song;
 
@@ -34,5 +37,25 @@ public class DuetSongPart extends BaseEntity {
     @NotNull
     @Column(name = "part_name", nullable = false)
     private String partName;
+
+    @Enumerated(EnumType.STRING)
+    @NotNull
+    @Column(name = "voice_type", nullable = false, length = 50)
+    private VoiceType voiceType;
+
+    @NotNull
+    @Column(name = "pitch_note_min", nullable = false, length = 10)
+    private String pitchNoteMin;
+
+    @NotNull
+    @Column(name = "pitch_note_max", nullable = false, length = 10)
+    private String pitchNoteMax;
+
+    @OneToMany(
+            mappedBy = "duetSongPart",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<Lyricsline> lines = new ArrayList<>();
 
 }

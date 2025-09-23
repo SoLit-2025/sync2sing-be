@@ -1,5 +1,6 @@
 package com.solit.sync2sing.domain.admin.dto;
 
+import com.solit.sync2sing.global.type.VoiceType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -22,17 +23,36 @@ public class AdminDuetSongUploadRequest {
     private String artist;
 
     @NotNull
-    private String voiceType;
-
-    @NotNull
-    private String pitchNoteMin;
-
-    @NotNull
-    private String pitchNoteMax;
+    private String youtubeLink;
 
     @NotNull
     @Valid
-    private List<AdminDuetSongUploadRequest.LyricLineDTO> lyrics;
+    private List<DuetPartDTO> duetParts;
+
+    @NotNull
+    @Valid
+    private List<LyricLineDTO> lyrics;
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DuetPartDTO {
+        @NotNull
+        private Integer partNumber;
+
+        @NotNull
+        private String partName;
+
+        @NotNull
+        private String voiceType;
+
+        @NotNull
+        private String  pitchNoteMin;
+
+        @NotNull
+        private String  pitchNoteMax;
+    }
 
     @Getter
     @Builder
@@ -49,7 +69,7 @@ public class AdminDuetSongUploadRequest {
         private Integer startTime;
 
         @NotNull
-        private String partName;
+        private Integer partNumber;
     }
 
 }

@@ -120,14 +120,33 @@ public abstract class AbstractTrainingService {
                 return Optional.empty();
             }
 
+            DuetSongPart hostPartEntity = room.getHostUserPart();
+            DuetSongPart partnerPartEntity = room.getPartnerUserPart();
+
+            DuetTrainingRoomListResponse.DuetPartDTO hostPartDTO =
+                    DuetTrainingRoomListResponse.DuetPartDTO.builder()
+                            .partNumber(hostPartEntity.getPartNumber())
+                            .partName(hostPartEntity.getPartName())
+                            .voiceType(hostPartEntity.getVoiceType().name())
+                            .pitchNoteMin(hostPartEntity.getPitchNoteMin())
+                            .pitchNoteMax(hostPartEntity.getPitchNoteMax())
+                            .build();
+
+            DuetTrainingRoomListResponse.DuetPartDTO partnerPartDTO =
+                    DuetTrainingRoomListResponse.DuetPartDTO.builder()
+                            .partNumber(partnerPartEntity.getPartNumber())
+                            .partName(partnerPartEntity.getPartName())
+                            .voiceType(partnerPartEntity.getVoiceType().name())
+                            .pitchNoteMin(partnerPartEntity.getPitchNoteMin())
+                            .pitchNoteMax(partnerPartEntity.getPitchNoteMax())
+                            .build();
+
             DuetTrainingRoomDtoB = DuetTrainingRoomListResponse.DuetTrainingRoomDto.builder()
                     .id(room.getId())
                     .createdAt(room.getCreatedAt())
                     .trainingDays(room.getCurriculumDays())
-                    .hostPartNumber(room.getHostUserPart().getPartNumber())
-                    .hostPartName(room.getHostUserPart().getPartName())
-                    .partnerPartNumber(room.getPartnerUserPart().getPartNumber())
-                    .partnerPartName(room.getPartnerUserPart().getPartName());
+                    .hostPart(hostPartDTO)
+                    .partnerPart(partnerPartDTO);
         }
 
         SongListDTO.SongDTO songDTO = songB.build();
@@ -315,19 +334,31 @@ public abstract class AbstractTrainingService {
                     .id(song.getId())
                     .title(song.getTitle())
                     .artist(song.getArtist())
-                    .voiceType(song.getVoiceType().name())
-                    .pitchNoteMin(song.getPitchNoteMin())
-                    .pitchNoteMax(song.getPitchNoteMax());
+                    .youtubeLink(song.getYoutubeLink());
+
+            if (trainingMode == TrainingMode.SOLO) {
+                songDTOBuilder
+                        .voiceType(song.getVoiceType().name())
+                        .pitchNoteMin(song.getPitchNoteMin())
+                        .pitchNoteMax(song.getPitchNoteMax());
+            }
 
             // 2-2) 전체 가사
             List<Lyricsline> allLines = lyricslineRepository
                     .findBySongOrderByLineIndex(song);
             List<SongListDTO.LyricLineDTO> lyrics = allLines.stream()
-                    .map(l -> SongListDTO.LyricLineDTO.builder()
+                    .map(l -> {
+                        SongListDTO.LyricLineDTO.LyricLineDTOBuilder lyricLineDTOBuilder = SongListDTO.LyricLineDTO.builder()
                             .lineIndex(l.getLineIndex())
                             .text(l.getText())
-                            .startTime(l.getStartTimeMs())
-                            .build())
+                            .startTime(l.getStartTimeMs());
+
+                        if (trainingMode == TrainingMode.DUET) {
+                            lyricLineDTOBuilder.partNumber(l.getDuetSongPart().getPartNumber());
+                        }
+
+                        return lyricLineDTOBuilder.build();
+                    })
                     .collect(Collectors.toList());
             songDTOBuilder.lyrics(lyrics);
 
@@ -339,21 +370,16 @@ public abstract class AbstractTrainingService {
                 songDTOBuilder.fileUrl(song.getOriginalAudioFile().getFileUrl());
             }
 
-            // 2-4) 듀엣 모드인 경우 파트별 인덱스
+            // 2-4) 듀엣 모드인 경우 파트 정보 조회
             if (trainingMode == TrainingMode.DUET) {
                 List<DuetSongPart> parts = duetSongPartRepository.findBySong(song);
-                List<SongListDTO.DuetPartDTO> duetPartList = parts.stream().map(part -> {
-                    List<Integer> idxList = lyricslineRepository
-                            .findByDuetSongPart(part).stream()
-                            .map(Lyricsline::getLineIndex)
-                            .sorted()
-                            .collect(Collectors.toList());
-                    return SongListDTO.DuetPartDTO.builder()
-                            .partNumber(part.getPartNumber())
-                            .partName(part.getPartName())
-                            .lyricsIndexes(idxList)
-                            .build();
-                }).collect(Collectors.toList());
+                List<SongListDTO.DuetPartDTO> duetPartList = parts.stream().map(part -> SongListDTO.DuetPartDTO.builder()
+                        .partNumber(part.getPartNumber())
+                        .partName(part.getPartName())
+                        .voiceType(part.getVoiceType().name())
+                        .pitchNoteMin(part.getPitchNoteMin())
+                        .pitchNoteMax(part.getPitchNoteMax())
+                        .build()).collect(Collectors.toList());
                 songDTOBuilder.duetParts(duetPartList);
             }
 
@@ -399,18 +425,30 @@ public abstract class AbstractTrainingService {
                 .id(song.getId())
                 .title(song.getTitle())
                 .artist(song.getArtist())
-                .voiceType(song.getVoiceType().name())
-                .pitchNoteMin(song.getPitchNoteMin())
-                .pitchNoteMax(song.getPitchNoteMax());
+                .youtubeLink(song.getYoutubeLink());
+
+        if (trainingMode == TrainingMode.SOLO) {
+            songDTOBuilder
+                    .voiceType(song.getVoiceType().name())
+                    .pitchNoteMin(song.getPitchNoteMin())
+                    .pitchNoteMax(song.getPitchNoteMax());
+        }
 
         // 3) 전체 가사 조회
         List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(song);
         List<SongListDTO.LyricLineDTO> lyrics = lines.stream()
-                .map(l -> SongListDTO.LyricLineDTO.builder()
-                        .lineIndex(l.getLineIndex())
-                        .text(l.getText())
-                        .startTime(l.getStartTimeMs())
-                        .build())
+                .map(l -> {
+                    SongListDTO.LyricLineDTO.LyricLineDTOBuilder lyricLineDTOBuilder = SongListDTO.LyricLineDTO.builder()
+                            .lineIndex(l.getLineIndex())
+                            .text(l.getText())
+                            .startTime(l.getStartTimeMs());
+
+                    if (trainingMode == TrainingMode.DUET) {
+                        lyricLineDTOBuilder.partNumber(l.getDuetSongPart().getPartNumber());
+                    }
+
+                    return lyricLineDTOBuilder.build();
+                })
                 .collect(Collectors.toList());
         songDTOBuilder.lyrics(lyrics);
 
@@ -425,18 +463,13 @@ public abstract class AbstractTrainingService {
         // 5) 듀엣 모드라면 파트별 인덱스 추가
         if (trainingMode == TrainingMode.DUET) {
             List<DuetSongPart> parts = duetSongPartRepository.findBySong(song);
-            List<SongListDTO.DuetPartDTO> duetPartList = parts.stream().map(part -> {
-                List<Integer> idxs = lyricslineRepository
-                        .findByDuetSongPart(part).stream()
-                        .map(Lyricsline::getLineIndex)
-                        .sorted()
-                        .collect(Collectors.toList());
-                return SongListDTO.DuetPartDTO.builder()
-                        .partNumber(part.getPartNumber())
-                        .partName(part.getPartName())
-                        .lyricsIndexes(idxs)
-                        .build();
-            }).collect(Collectors.toList());
+            List<SongListDTO.DuetPartDTO> duetPartList = parts.stream().map(part -> SongListDTO.DuetPartDTO.builder()
+                    .partNumber(part.getPartNumber())
+                    .partName(part.getPartName())
+                    .voiceType(part.getVoiceType().name())
+                    .pitchNoteMin(part.getPitchNoteMin())
+                    .pitchNoteMax(part.getPitchNoteMax())
+                    .build()).collect(Collectors.toList());
             songDTOBuilder.duetParts(duetPartList);
         }
 
