@@ -9,7 +9,7 @@ public interface DuetTrainingService {
 
     SentPartnerApplicationListResponse getSentPartnerApplications(Long userId);
 
-    DuetTrainingRoomListResponse getRoomList();
+    DuetTrainingRoomListResponse getRoomList(Long userId);
 
     DuetTrainingRoomListResponse.DuetTrainingRoomDto createRoom(Long userId, CreateRoomRequest request);
 
