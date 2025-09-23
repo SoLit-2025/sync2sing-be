@@ -177,33 +177,27 @@ public class UserController {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(required = true) String mode) {
 
+        if(userDetails == null){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ResponseDTO<>(ResponseCode.UNAUTHORIZED));
+        }
         try {
-            if(userDetails == null){
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ResponseDTO<>(ResponseCode.UNAUTHORIZED));
-            }
-
-            if("solo".equalsIgnoreCase(mode)){
-                SoloVocalAnalysisReportListResponseDTO responseData =
+            if ("solo".equalsIgnoreCase(mode)) {
+                SoloVocalAnalysisReportListResponseDTO soloResponse =
                         soloVocalAnalysisReportListService.getSoloVocalAnalysisReportList(userDetails);
 
                 return ResponseEntity.ok(
-                        new ResponseDTO<>(ResponseCode.SOLO_VOCAL_ANALYSIS_REPORT_LIST_FETCHED, responseData)
-                );
-
+                        new ResponseDTO<>(ResponseCode.SOLO_VOCAL_ANALYSIS_REPORT_LIST_FETCHED, soloResponse));
             } else if("duet".equalsIgnoreCase(mode)) {
-                DuetVocalAnalysisReportListResponseDTO responseData =
+                DuetVocalAnalysisReportListResponseDTO duetResponse =
                         duetVocalAnalysisReportListService.getDuetVocalAnalysisReportList(userDetails);
 
                 return ResponseEntity.ok(
-                        new ResponseDTO<>(ResponseCode.DUET_VOCAL_ANALYSIS_REPORT_LIST_FETCHED, responseData)
-                );
-
+                        new ResponseDTO<>(ResponseCode.DUET_VOCAL_ANALYSIS_REPORT_LIST_FETCHED, duetResponse));
             } else {
                 return ResponseEntity.badRequest()
                         .body(new ResponseDTO<>(ResponseCode.INVALID_REQUEST));
             }
-
         } catch (Exception e) {
             logger.error("리포트 목록 API 호출 중 오류 발생 - 코드: {}, 메시지: {}, 예외: {}",
                     ResponseCode.INTERNAL_ERROR.name(),
@@ -213,7 +207,6 @@ public class UserController {
                     .body(new ResponseDTO<>(ResponseCode.INTERNAL_ERROR));
         }
     }
-
 
 
 }
