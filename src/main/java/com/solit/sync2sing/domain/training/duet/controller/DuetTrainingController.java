@@ -38,12 +38,14 @@ public class DuetTrainingController {
     }
 
     @GetMapping("/rooms")
-    public ResponseEntity<ResponseDTO> getRoomList() {
+    public ResponseEntity<ResponseDTO> getRoomList(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(new ResponseDTO(
                         ResponseCode.DUET_TRAINING_ROOMS_FETCHED,
-                        duetTrainingService.getRoomList()
+                        duetTrainingService.getRoomList(userDetails.getId())
                 ));
     }
 

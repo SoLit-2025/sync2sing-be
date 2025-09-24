@@ -25,6 +25,9 @@ public class AdminSoloSongUploadRequest {
     private String artist;
 
     @NotNull
+    private String youtubeLink;
+
+    @NotNull
     private String voiceType;
 
     @NotNull

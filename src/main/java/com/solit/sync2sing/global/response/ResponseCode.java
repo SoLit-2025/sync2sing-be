@@ -55,6 +55,7 @@ public enum ResponseCode {
     DUET_TRAINING_ROOM_CREATED(HttpStatus.CREATED, "듀엣 트레이닝 방 생성에 성공했습니다."),
     DUET_TRAINING_ROOM_DELETED(HttpStatus.OK, "듀엣 트레이닝 방 삭제에 성공했습니다."),
     DUET_TRAINING_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "듀엣 트레이닝 방을 찾을 수 없습니다."),
+    DUET_TRAINING_ROOM_ALREADY_EXIST(HttpStatus.BAD_REQUEST, "이미 생성한 듀엣 트레이닝 방이 존재합니다. 두 개 이상의 듀엣 트레이닝 방을 생성할 수 없습니다."),
     DUET_TRAINING_ROOM_NOT_PENDING(HttpStatus.CONFLICT, "듀엣 트레이닝 방이 대기(PENDING) 상태가 아닙니다. 현재 상태: %s"),
     DUET_ROOM_APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 방에 속한 파트너 신청을 찾을 수 없습니다."),
     DUET_TRAINING_SESSION_FETCHED(HttpStatus.OK, "듀엣 트레이닝 세션 정보 조회에 성공했습니다."),
@@ -96,7 +97,8 @@ public enum ResponseCode {
 
     ADMIN_SOLOSONG_UPLOADED(HttpStatus.CREATED, "솔로곡 업로드에 성공했습니다."),
     ADMIN_DUETSONG_UPLOADED(HttpStatus.CREATED, "듀엣곡 업로드에 성공했습니다."),
-    INVALID_DUET_PART_COUNT(HttpStatus.BAD_REQUEST, "듀엣곡은 고유한 파트 이름을 최대 2개까지만 가질 수 있습니다."),
+    INVALID_DUET_PART_COUNT(HttpStatus.BAD_REQUEST, "듀엣곡은 파트를 최대 2개까지만 가질 수 있습니다."),
+    INVALID_DUET_PART_NUMBER(HttpStatus.BAD_REQUEST, "듀엣곡 part_number는 반드시 0 또는 1이어야 합니다."),
     ADMIN_SONG_DELETED(HttpStatus.OK, "곡 삭제에 성공했습니다."),
     SONG_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 곡을 찾을 수 없습니다."),
     EMPTY_FILE_EXCEPTION(HttpStatus.BAD_REQUEST, "파일이 비어 있습니다."),
