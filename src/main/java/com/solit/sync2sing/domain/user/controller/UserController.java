@@ -175,30 +175,27 @@ public class UserController {
     }
 
     @GetMapping("/reports")
-    public ResponseEntity<ResponseDTO<SoloVocalAnalysisReportListResponseDTO>> getSoloReportList(
+    public ResponseEntity<ResponseDTO<?>> getReportList(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam(required = true) String mode)
-    {
+            @RequestParam(required = true) String mode) {
 
+        if(userDetails == null){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ResponseDTO<>(ResponseCode.UNAUTHORIZED));
+        }
         try {
-            if(!"solo".equalsIgnoreCase(mode)){
+            if ("solo".equalsIgnoreCase(mode)) {
+                SoloVocalAnalysisReportListResponseDTO soloResponse =
+                        soloVocalAnalysisReportListService.getSoloVocalAnalysisReportList(userDetails);
+
+                return ResponseEntity.ok(
+                        new ResponseDTO<>(ResponseCode.SOLO_VOCAL_ANALYSIS_REPORT_LIST_FETCHED, soloResponse));
+            } else {
                 return ResponseEntity.badRequest()
                         .body(new ResponseDTO<>(ResponseCode.INVALID_REQUEST));
             }
-            if(userDetails == null){
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ResponseDTO<>(ResponseCode.UNAUTHORIZED));
-            }
-
-            SoloVocalAnalysisReportListResponseDTO responseData =
-                    soloVocalAnalysisReportListService.getSoloVocalAnalysisReportList(userDetails);
-
-            return ResponseEntity.ok(
-                    new ResponseDTO<>(ResponseCode.SOLO_VOCAL_ANALYSIS_REPORT_LIST_FETCHED, responseData)
-            );
-
         } catch (Exception e) {
-            logger.error("API 호출 중 오류 발생 - 코드: {}, 메시지: {}, 예외: {}",
+            logger.error("리포트 목록 API 호출 중 오류 발생 - 코드: {}, 메시지: {}, 예외: {}",
                     ResponseCode.INTERNAL_ERROR.name(),
                     ResponseCode.INTERNAL_ERROR.getMessage(),
                     e.getMessage(), e);
