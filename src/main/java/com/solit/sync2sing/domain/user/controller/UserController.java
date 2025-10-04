@@ -6,6 +6,7 @@ import com.solit.sync2sing.domain.user.dto.request.SignupRequestDTO;
 import com.solit.sync2sing.domain.user.dto.response.*;
 import com.solit.sync2sing.domain.user.dto.request.UserInfoUpdateRequestDTO;
 import com.solit.sync2sing.domain.user.service.UserInfoUpdateService;
+import com.solit.sync2sing.domain.user.service.SoloVocalAnalysisReportListService;
 import com.solit.sync2sing.domain.user.service.UserLoginService;
 import com.solit.sync2sing.domain.user.service.UserLogoutService;
 import com.solit.sync2sing.domain.user.service.UserSignupService;
@@ -19,7 +20,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.solit.sync2sing.global.security.CustomUserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -32,17 +38,22 @@ public class UserController {
     private final UserLogoutService userLogoutService;
     private final UserInfoUpdateService userInfoUpdateService;
     private final UserInfoService userInfoService;
+    private final SoloVocalAnalysisReportListService soloVocalAnalysisReportListService;
+
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
     public UserController(UserSignupService userSignupService,
                           UserLoginService userLoginService,
                           UserLogoutService userLogoutService,
                           UserInfoUpdateService userInfoUpdateService,
-                          UserInfoService userInfoService) {
+                          UserInfoService userInfoService,
+                          SoloVocalAnalysisReportListService soloVocalAnalysisReportListService) {
         this.userSignupService = userSignupService;
         this.userLoginService = userLoginService;
         this.userLogoutService = userLogoutService;
         this.userInfoUpdateService = userInfoUpdateService;
         this.userInfoService = userInfoService;
+        this.soloVocalAnalysisReportListService = soloVocalAnalysisReportListService;
     }
 
     @PostMapping("/signup")
@@ -162,4 +173,37 @@ public class UserController {
                     ));
         }
     }
+
+    @GetMapping("/reports")
+    public ResponseEntity<ResponseDTO<?>> getReportList(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(required = true) String mode) {
+
+        if(userDetails == null){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ResponseDTO<>(ResponseCode.UNAUTHORIZED));
+        }
+        try {
+            if ("solo".equalsIgnoreCase(mode)) {
+                SoloVocalAnalysisReportListResponseDTO soloResponse =
+                        soloVocalAnalysisReportListService.getSoloVocalAnalysisReportList(userDetails);
+
+                return ResponseEntity.ok(
+                        new ResponseDTO<>(ResponseCode.SOLO_VOCAL_ANALYSIS_REPORT_LIST_FETCHED, soloResponse));
+            } else {
+                return ResponseEntity.badRequest()
+                        .body(new ResponseDTO<>(ResponseCode.INVALID_REQUEST));
+            }
+        } catch (Exception e) {
+            logger.error("리포트 목록 API 호출 중 오류 발생 - 코드: {}, 메시지: {}, 예외: {}",
+                    ResponseCode.INTERNAL_ERROR.name(),
+                    ResponseCode.INTERNAL_ERROR.getMessage(),
+                    e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body(new ResponseDTO<>(ResponseCode.INTERNAL_ERROR));
+        }
+    }
+
+
+
 }
