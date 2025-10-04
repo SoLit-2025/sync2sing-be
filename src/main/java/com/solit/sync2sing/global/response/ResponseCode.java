@@ -24,6 +24,7 @@ public enum ResponseCode {
     INVALID_CURRICULUM_DAYS(HttpStatus.BAD_REQUEST, "trainingDays는 3, 7, 14 중 하나여야 합니다."),
     TRAINING_PROGRESS_UPDATED(HttpStatus.OK, "트레이닝 진행 상황 업데이트에 성공했습니다."),
     VOCAL_ANALYSIS_REPORT_CREATED(HttpStatus.CREATED, "보컬 분석 리포트 생성에 성공했습니다."),
+    VOCAL_ANALYSIS_REPORT_FETCHED(HttpStatus.OK, "보컬 분석 리포트 상세 조회에 성공했습니다."),
     VOCAL_ANALYSIS_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 보컬 분석 리포트를 찾을 수 없습니다."),
     INVALID_TRAINING_MODE_OR_ANALYSIS_TYPE(HttpStatus.BAD_REQUEST, "트레이닝 모드 또는 분석 타입 요청 값이 유효하지 않습니다."),
     EXTERNAL_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "외부 API 응답 시간 초과. 잠시 후 다시 시도해 주세요."),

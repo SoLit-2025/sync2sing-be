@@ -35,6 +35,7 @@ public class UserController {
     private final UserInfoService userInfoService;
     private final SoloVocalAnalysisReportListService soloVocalAnalysisReportListService;
     private final DuetVocalAnalysisReportListService duetVocalAnalysisReportListService;
+    private final VocalAnalysisReportDetailService vocalAnalysisReportDetailService;
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
@@ -44,7 +45,7 @@ public class UserController {
                           UserInfoUpdateService userInfoUpdateService,
                           UserInfoService userInfoService,
                           SoloVocalAnalysisReportListService soloVocalAnalysisReportListService,
-                          DuetVocalAnalysisReportListService duetVocalAnalysisReportListService) {
+                          DuetVocalAnalysisReportListService duetVocalAnalysisReportListService, VocalAnalysisReportDetailService vocalAnalysisReportDetailService) {
         this.userSignupService = userSignupService;
         this.userLoginService = userLoginService;
         this.userLogoutService = userLogoutService;
@@ -52,6 +53,7 @@ public class UserController {
         this.userInfoService = userInfoService;
         this.soloVocalAnalysisReportListService = soloVocalAnalysisReportListService;
         this.duetVocalAnalysisReportListService = duetVocalAnalysisReportListService;
+        this.vocalAnalysisReportDetailService = vocalAnalysisReportDetailService;
     }
 
     @PostMapping("/signup")
@@ -207,6 +209,35 @@ public class UserController {
                     .body(new ResponseDTO<>(ResponseCode.INTERNAL_ERROR));
         }
     }
+    @GetMapping("/reports/{reportId}")
+    public ResponseEntity<ResponseDTO<?>> getVocalAnalysisReportDetail(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long reportId) {
+        if(userDetails == null){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ResponseDTO<>(ResponseCode.UNAUTHORIZED));
+        }
+
+        try{
+            VocalAnalysisReportDetailResponseDTO reportDetail =
+                    vocalAnalysisReportDetailService.getVocalAnalysisReportDetail(reportId);
+
+            return ResponseEntity.ok(
+                    new ResponseDTO<>(ResponseCode.VOCAL_ANALYSIS_REPORT_FETCHED,reportDetail));
+        } catch (ResponseStatusException e) {
+            ResponseCode code = ResponseCode.from(e.getStatusCode(), e.getReason());
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(new ResponseDTO<>(code));
+        } catch (Exception e) {
+            logger.error("리포트 상세 조회 API 호출 중 오류 발생 - 코드: {}, 메시지: {}, 예외: {}",
+                    ResponseCode.INTERNAL_ERROR.name(),
+                    ResponseCode.INTERNAL_ERROR.getMessage(),
+                    e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body(new ResponseDTO<>(ResponseCode.INTERNAL_ERROR));
+        }
+    }
+
 
 
 
