@@ -69,18 +69,23 @@ public class TrainingController {
             @RequestPart(value = "vocal_file") MultipartFile vocalFile,
             @RequestPart(value = "data") GenerateVocalAnalysisReportRequest request
     ) {
+        Long userId;
         if (!request.getAnalysisType().equals("GUEST") && userDetails == null) {
             throw new ResponseStatusException(
                     ResponseCode.UNAUTHORIZED.getStatus(),
                     ResponseCode.UNAUTHORIZED.getMessage()
             );
+        } else if (request.getAnalysisType().equals("GUEST")) {
+            userId = null;
+        } else {
+            userId = userDetails.getId();
         }
 
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(new ResponseDTO(
                 ResponseCode.VOCAL_ANALYSIS_REPORT_CREATED,
-                trainingService.generateVocalAnalysisReport(userDetails.getId(), vocalFile, request)
+                trainingService.generateVocalAnalysisReport(userId, vocalFile, request)
             ));
     }
 
