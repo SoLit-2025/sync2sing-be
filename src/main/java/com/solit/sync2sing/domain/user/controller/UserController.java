@@ -5,12 +5,7 @@ import com.solit.sync2sing.domain.user.dto.request.LogoutRequestDTO;
 import com.solit.sync2sing.domain.user.dto.request.SignupRequestDTO;
 import com.solit.sync2sing.domain.user.dto.response.*;
 import com.solit.sync2sing.domain.user.dto.request.UserInfoUpdateRequestDTO;
-import com.solit.sync2sing.domain.user.service.UserInfoUpdateService;
-import com.solit.sync2sing.domain.user.service.SoloVocalAnalysisReportListService;
-import com.solit.sync2sing.domain.user.service.UserLoginService;
-import com.solit.sync2sing.domain.user.service.UserLogoutService;
-import com.solit.sync2sing.domain.user.service.UserSignupService;
-import com.solit.sync2sing.domain.user.service.UserInfoService;
+import com.solit.sync2sing.domain.user.service.*;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.response.ResponseDTO;
 import com.solit.sync2sing.global.util.SecurityUtil;
@@ -39,6 +34,7 @@ public class UserController {
     private final UserInfoUpdateService userInfoUpdateService;
     private final UserInfoService userInfoService;
     private final SoloVocalAnalysisReportListService soloVocalAnalysisReportListService;
+    private final DuetVocalAnalysisReportListService duetVocalAnalysisReportListService;
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
@@ -47,13 +43,15 @@ public class UserController {
                           UserLogoutService userLogoutService,
                           UserInfoUpdateService userInfoUpdateService,
                           UserInfoService userInfoService,
-                          SoloVocalAnalysisReportListService soloVocalAnalysisReportListService) {
+                          SoloVocalAnalysisReportListService soloVocalAnalysisReportListService,
+                          DuetVocalAnalysisReportListService duetVocalAnalysisReportListService) {
         this.userSignupService = userSignupService;
         this.userLoginService = userLoginService;
         this.userLogoutService = userLogoutService;
         this.userInfoUpdateService = userInfoUpdateService;
         this.userInfoService = userInfoService;
         this.soloVocalAnalysisReportListService = soloVocalAnalysisReportListService;
+        this.duetVocalAnalysisReportListService = duetVocalAnalysisReportListService;
     }
 
     @PostMapping("/signup")
@@ -190,6 +188,12 @@ public class UserController {
 
                 return ResponseEntity.ok(
                         new ResponseDTO<>(ResponseCode.SOLO_VOCAL_ANALYSIS_REPORT_LIST_FETCHED, soloResponse));
+            } else if("duet".equalsIgnoreCase(mode)) {
+                DuetVocalAnalysisReportListResponseDTO duetResponse =
+                        duetVocalAnalysisReportListService.getDuetVocalAnalysisReportList(userDetails);
+
+                return ResponseEntity.ok(
+                        new ResponseDTO<>(ResponseCode.DUET_VOCAL_ANALYSIS_REPORT_LIST_FETCHED, duetResponse));
             } else {
                 return ResponseEntity.badRequest()
                         .body(new ResponseDTO<>(ResponseCode.INVALID_REQUEST));
