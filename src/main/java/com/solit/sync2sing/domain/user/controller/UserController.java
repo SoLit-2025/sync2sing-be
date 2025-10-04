@@ -229,7 +229,7 @@ public class UserController {
             return ResponseEntity.status(e.getStatusCode())
                     .body(new ResponseDTO<>(code));
         } catch (Exception e) {
-            logger.error("리포트 목록 API 호출 중 오류 발생 - 코드: {}, 메시지: {}, 예외: {}",
+            logger.error("리포트 상세 조회 API 호출 중 오류 발생 - 코드: {}, 메시지: {}, 예외: {}",
                     ResponseCode.INTERNAL_ERROR.name(),
                     ResponseCode.INTERNAL_ERROR.getMessage(),
                     e.getMessage(), e);
@@ -237,6 +237,7 @@ public class UserController {
                     .body(new ResponseDTO<>(ResponseCode.INTERNAL_ERROR));
         }
     }
+
 
 
 }

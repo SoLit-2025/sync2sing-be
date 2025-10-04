@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -70,6 +69,7 @@ public class AdminSongServiceImpl implements AdminSongService {
                     .trainingMode(TrainingMode.valueOf(request.getTrainingMode()))
                     .title(request.getTitle())
                     .artist(request.getArtist())
+                    .youtubeLink(request.getYoutubeLink())
                     .voiceType(VoiceType.valueOf(request.getVoiceType()))
                     .pitchNoteMin(request.getPitchNoteMin())
                     .pitchNoteMax(request.getPitchNoteMax())
@@ -106,6 +106,24 @@ public class AdminSongServiceImpl implements AdminSongService {
             MultipartFile mrAudio,
             AdminDuetSongUploadRequest request
     ) {
+        if (request.getDuetParts().size() != 2) {
+            throw new ResponseStatusException(
+                    ResponseCode.INVALID_DUET_PART_COUNT.getStatus(),
+                    ResponseCode.INVALID_DUET_PART_COUNT.getMessage()
+            );
+        }
+
+        List<Integer> nums = request.getDuetParts().stream()
+                .map(AdminDuetSongUploadRequest.DuetPartDTO::getPartNumber)
+                .toList();
+
+        if (!(nums.contains(0) && nums.contains(1))) {
+            throw new ResponseStatusException(
+                    ResponseCode.INVALID_DUET_PART_NUMBER.getStatus(),
+                    ResponseCode.INVALID_DUET_PART_NUMBER.getMessage()
+            );
+        }
+
         String albumCoverS3Url = null;
         String originalAudioS3Url = null;
         String mrAudioS3Url = null;
@@ -136,51 +154,47 @@ public class AdminSongServiceImpl implements AdminSongService {
                     .trainingMode(TrainingMode.DUET)
                     .title(request.getTitle())
                     .artist(request.getArtist())
-                    .voiceType(VoiceType.valueOf(request.getVoiceType()))
-                    .pitchNoteMin(request.getPitchNoteMin())
-                    .pitchNoteMax(request.getPitchNoteMax())
+                    .youtubeLink(request.getYoutubeLink())
                     .build();
             songRepository.save(song);
 
-            LinkedHashMap<String, Integer> partOrder = new LinkedHashMap<>();
-            int nextNumber = 0;
-            for (AdminDuetSongUploadRequest.LyricLineDTO dto : request.getLyrics()) {
-                String partName = dto.getPartName();
-
-                if (!partOrder.containsKey(partName)) {
-                    partOrder.put(partName, nextNumber++);
-                    if (partOrder.size() > 2) {
-                        throw new ResponseStatusException(
-                                ResponseCode.INVALID_DUET_PART_COUNT.getStatus(),
-                                ResponseCode.INVALID_DUET_PART_COUNT.getMessage()
-                        );
-                    }
-                }
-            }
-
-            List<DuetSongPart> parts = partOrder.entrySet().stream()
-                    .map(e -> DuetSongPart.builder()
+            List<DuetSongPart> parts = request.getDuetParts().stream()
+                    .map(dto -> DuetSongPart.builder()
                             .song(song)
-                            .partNumber(e.getValue())
-                            .partName(e.getKey())
-                            .build())
+                            .partNumber(dto.getPartNumber())
+                            .partName(dto.getPartName())
+                            .voiceType(VoiceType.valueOf(dto.getVoiceType()))
+                            .pitchNoteMin(dto.getPitchNoteMin())
+                            .pitchNoteMax(dto.getPitchNoteMax())
+                            .build()
+                    )
                     .collect(Collectors.toList());
             duetSongPartRepository.saveAll(parts);
 
-            Map<String, DuetSongPart> partByName = parts.stream()
+            Map<Integer, DuetSongPart> partByNumber = parts.stream()
                     .collect(Collectors.toMap(
-                            DuetSongPart::getPartName,
+                            DuetSongPart::getPartNumber,
                             p -> p
                     ));
 
             List<Lyricsline> lines = request.getLyrics().stream()
-                    .map(dto -> Lyricsline.builder()
-                            .song(song)
-                            .duetSongPart(partByName.get(dto.getPartName()))
-                            .lineIndex(dto.getLineIndex())
-                            .text(dto.getText())
-                            .startTimeMs(dto.getStartTime())
-                            .build())
+                    .map(dto -> {
+
+                        if (dto.getPartNumber() != 0 && dto.getPartNumber()!= 1) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.INVALID_DUET_PART_NUMBER.getStatus(),
+                                    ResponseCode.INVALID_DUET_PART_NUMBER.getMessage()
+                            );
+                        }
+
+                        return Lyricsline.builder()
+                                .song(song)
+                                .duetSongPart(partByNumber.get(dto.getPartNumber()))
+                                .lineIndex(dto.getLineIndex())
+                                .text(dto.getText())
+                                .startTimeMs(dto.getStartTime())
+                                .build();
+                    })
                     .collect(Collectors.toList());
             lyricslineRepository.saveAll(lines);
 
