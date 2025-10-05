@@ -47,6 +47,7 @@ public class SecurityConfig {
                                 "/api/training/vocal-analysis"
                                 ).permitAll()
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                        .requestMatchers("/api/user/reports", "/api/user/reports/**").authenticated()
                         .requestMatchers("/api/user/logout").hasRole("USER")  // 권한 설정
                         .anyRequest().authenticated()
                 )

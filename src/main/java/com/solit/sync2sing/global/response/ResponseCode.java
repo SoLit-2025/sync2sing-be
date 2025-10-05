@@ -24,6 +24,7 @@ public enum ResponseCode {
     INVALID_CURRICULUM_DAYS(HttpStatus.BAD_REQUEST, "trainingDays는 3, 7, 14 중 하나여야 합니다."),
     TRAINING_PROGRESS_UPDATED(HttpStatus.OK, "트레이닝 진행 상황 업데이트에 성공했습니다."),
     VOCAL_ANALYSIS_REPORT_CREATED(HttpStatus.CREATED, "보컬 분석 리포트 생성에 성공했습니다."),
+    VOCAL_ANALYSIS_REPORT_FETCHED(HttpStatus.OK, "보컬 분석 리포트 상세 조회에 성공했습니다."),
     VOCAL_ANALYSIS_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 보컬 분석 리포트를 찾을 수 없습니다."),
     INVALID_TRAINING_MODE_OR_ANALYSIS_TYPE(HttpStatus.BAD_REQUEST, "트레이닝 모드 또는 분석 타입 요청 값이 유효하지 않습니다."),
     EXTERNAL_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "외부 API 응답 시간 초과. 잠시 후 다시 시도해 주세요."),
@@ -42,6 +43,7 @@ public enum ResponseCode {
     SOLO_ORIGINAL_SONG_LIST_FETCHED(HttpStatus.OK, "솔로 트레이닝 원곡 목록 조회에 성공했습니다."),
     SOLO_MR_SONG_FETCHED(HttpStatus.OK, "솔로 트레이닝 MR 곡 조회에 성공했습니다."),
     SOLO_ORIGINAL_SONG_FETCHED(HttpStatus.OK, "솔로 트레이닝 원곡 조회에 성공했습니다."),
+    SOLO_VOCAL_ANALYSIS_REPORT_LIST_FETCHED(HttpStatus.OK, "솔로 보컬 분석 리포트 목록 조회에 성공했습니다."),
     
     DUET_AUDIO_MERGED(HttpStatus.CREATED, "듀엣 음원 병합에 성공했습니다."),
     PARTNER_APPLICATION_CREATED(HttpStatus.CREATED, "파트너 신청이 완료되었습니다."),
@@ -68,6 +70,7 @@ public enum ResponseCode {
     DUET_CURRENT_TRAINING_EMPTY(HttpStatus.NO_CONTENT, "진행 중인 트레이닝이 없습니다."),
     DUET_TRAINING_PROGRESS_UPDATED(HttpStatus.OK, "듀엣 트레이닝 진행 상황 업데이트에 성공했습니다."),
     AUDIO_MERGE_FAILED(HttpStatus.BAD_GATEWAY, "오디오 파일 병합 실패. 다시 시도해 주세요."),
+    DUET_VOCAL_ANALYSIS_REPORT_LIST_FETCHED(HttpStatus.OK, "듀엣 보컬 분석 리포트 목록 조회에 성공했습니다."),
 
     SIGNUP_SUCCESS(HttpStatus.CREATED, "회원가입에 성공했습니다."),
     DUPLICATE_USERNAME(HttpStatus.BAD_REQUEST, "이미 사용 중인 아이디입니다."),
