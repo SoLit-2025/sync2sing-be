@@ -1,5 +1,6 @@
 package com.solit.sync2sing.global.ai.service;
 
+import com.solit.sync2sing.global.ai.dto.AiBvbPercentResponse;
 import com.solit.sync2sing.global.ai.dto.AiVoiceAnalysisResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,5 +34,19 @@ public class AiService {
     public CompletableFuture<AiVoiceAnalysisResponse> analyzeWithAiServer(String s3Uri) {
         return analyzeVoice(s3Uri)
                 .toFuture();
+    }
+
+    public Mono<AiBvbPercentResponse> analyzeBvbPercent(String s3Uri) {
+        return webClient.post()
+                .uri(aiServerUrl + "/ai/voice-analysis-aihub")
+                .header("Content-Type", "application/json")
+                .bodyValue(Map.of("s3_uri", s3Uri))
+                .retrieve()
+                .bodyToMono(AiBvbPercentResponse.class);
+    }
+
+    @Async
+    public CompletableFuture<AiBvbPercentResponse> analyzeBvbPercentAsync(String s3Uri) {
+        return analyzeBvbPercent(s3Uri).toFuture();
     }
 }

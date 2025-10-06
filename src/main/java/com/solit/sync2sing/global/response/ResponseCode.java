@@ -31,6 +31,7 @@ public enum ResponseCode {
     TRANSCRIBE_PARSING_FAILED(HttpStatus.BAD_GATEWAY, "Transcribe 결과 파싱 실패. 다시 시도해 주세요."),
     TRANSCRIPTION_FAIL(HttpStatus.BAD_GATEWAY, "AWS Transcription 처리 중 오류가 발생했습니다."),
     AI_VOICE_ANALYSIS_FAIL(HttpStatus.BAD_GATEWAY, "AI 발성 분석 처리 중 오류가 발생했습니다."),
+    AI_VOICE_ANALYSIS_FAIL_AIHUB(HttpStatus.BAD_GATEWAY, "AI 발성 분석 처리 중 오류가 발생했습니다. - AIHub"),
     RECORDING_NOT_FOUND(HttpStatus.NOT_FOUND, "녹음본을 찾을 수 없습니다."),
 
     SOLO_TRAINING_SESSION_FETCHED(HttpStatus.OK, "솔로 트레이닝 세션 정보 조회에 성공했습니다."),
