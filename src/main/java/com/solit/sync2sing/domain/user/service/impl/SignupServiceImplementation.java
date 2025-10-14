@@ -8,6 +8,7 @@ import com.solit.sync2sing.domain.user.service.UserSignupService;
 import com.solit.sync2sing.global.response.ResponseCode;
 import com.solit.sync2sing.global.type.Gender;
 import com.solit.sync2sing.global.type.VoiceType;
+import com.solit.sync2sing.repository.VocalAnalysisReportRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,11 +23,13 @@ public class SignupServiceImplementation implements UserSignupService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final VocalAnalysisReportRepository vocalAnalysisReportRepository;
 
     @Autowired
-    public SignupServiceImplementation(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public SignupServiceImplementation(UserRepository userRepository, PasswordEncoder passwordEncoder, VocalAnalysisReportRepository vocalAnalysisReportRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.vocalAnalysisReportRepository = vocalAnalysisReportRepository;
     }
 
     @Override
@@ -52,6 +55,16 @@ public class SignupServiceImplementation implements UserSignupService {
 
         try {
             userRepository.save(userEntity);
+
+            Long reportId = requestDTO.getReportId();
+            if (reportId != null){
+                vocalAnalysisReportRepository.findById(reportId)
+                        .ifPresent(report ->{
+                            if(report.getUser() == null) {
+                                report.setUser(userEntity);
+                            }
+                        });
+            }
         } catch (DataIntegrityViolationException e) {
             throw new ResponseStatusException(
                     ResponseCode.DUPLICATE_USERNAME.getStatus(),
