@@ -20,11 +20,6 @@ public interface VocalAnalysisReportRepository extends JpaRepository<VocalAnalys
             List<RecordingContext> reportTypes
     );
 
-    // 비로그인 Guest
-    List<VocalAnalysisReport> findAllByTrainingModeAndReportTypeOrderByCreatedAtDesc(
-            TrainingMode trainingMode,
-            RecordingContext reportType
-    );
 
     // 가장 최신 PRE 리포트 하나
     Optional<VocalAnalysisReport> findTopBySongAndTrainingModeAndReportTypeOrderByCreatedAtDesc(

@@ -523,11 +523,11 @@ public class TrainingServiceImpl implements TrainingService {
                     .proposalContent(proposalContent)
                     .build();
 
-            transactionTemplate.executeWithoutResult(status ->
-                vocalAnalysisReportRepository.save(vocalAnalysisReport)
+            VocalAnalysisReport savedGuestReport = transactionTemplate.execute(status ->
+                    vocalAnalysisReportRepository.save(vocalAnalysisReport)
             );
+            return PreVocalAnalysisReportResponse.toDTO(Objects.requireNonNull(savedGuestReport));
 
-            return PreVocalAnalysisReportResponse.toDTO(vocalAnalysisReport);
         } catch (ResponseStatusException rse) {
             if (recordingAudioS3Url != null) s3Util.deleteFileFromS3(recordingAudioS3Url);
 
