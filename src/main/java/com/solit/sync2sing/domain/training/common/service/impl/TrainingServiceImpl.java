@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.solit.sync2sing.domain.training.common.dto.*;
 import com.solit.sync2sing.domain.training.common.service.TrainingService;
 import com.solit.sync2sing.entity.*;
+import com.solit.sync2sing.global.ai.dto.AiBvbPercentResponse;
 import com.solit.sync2sing.global.ai.dto.AiVoiceAnalysisResponse;
 import com.solit.sync2sing.global.ai.service.AiService;
 import com.solit.sync2sing.global.chatgpt.dto.PostResponse;
@@ -370,6 +371,7 @@ public class TrainingServiceImpl implements TrainingService {
 
             CompletableFuture<String> transcriptFuture = transcriptionService.transcribeAndGetText(jobName, recordingAudioS3Url);
             CompletableFuture<AiVoiceAnalysisResponse> aiFuture = aiService.analyzeWithAiServer(recordingAudioS3Url);
+            CompletableFuture<AiBvbPercentResponse> bvbFuture = aiService.analyzeBvbPercentAsync(recordingAudioS3Url);
 
             String transcriptText = MeasureTime.run("transcriptFuture.get",
                     () -> {
@@ -397,6 +399,16 @@ public class TrainingServiceImpl implements TrainingService {
                             );
                         }
                     });
+            AiBvbPercentResponse bvbResult = MeasureTime.run("bvbFuture.get",
+                    () -> {
+                        try {
+                            return bvbFuture.get(60, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL_AIHUB.getStatus(),
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL_AIHUB.getMessage());
+                        }
+                    });
 
             List<String> typeList = new ArrayList<>();
             List<String> ratioList = new ArrayList<>();
@@ -408,6 +420,10 @@ public class TrainingServiceImpl implements TrainingService {
                 typeList.add(type);
                 ratioList.add(String.format("%.3f", ratio));
             }
+
+            double bendingPct = Optional.ofNullable(bvbResult).map(AiBvbPercentResponse::getData).map(AiBvbPercentResponse.Data::getBending).orElse(0.0);
+            double vibrtPct   = Optional.ofNullable(bvbResult).map(AiBvbPercentResponse::getData).map(AiBvbPercentResponse.Data::getVibrt).orElse(0.0);
+            double breathPct  = Optional.ofNullable(bvbResult).map(AiBvbPercentResponse::getData).map(AiBvbPercentResponse.Data::getBreath).orElse(0.0);
 
             String lyricText = "";
             List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(guestSong);
@@ -424,7 +440,7 @@ public class TrainingServiceImpl implements TrainingService {
                     + "* 역량: 점수·태그 기반 진단, 즉시 실행 가능한 과제 제안\n"
                     + "\n"
                     + "## 레시피/절차 생성\n"
-                    + "* 입력해석: 3개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
+                    + "* 입력해석: 3개 항목별 점수(0~100) + 발성태그 상위3개(확률%) + 발성 특성 3개 비율(%) → 강점·보완 도출\n"
                     + "* 우선순위: 60점 미만 항목 → 60~80점 항목 → 80점 이상 항목 순\n"
                     + "* 작성순서: 제목(한줄) → 상태요약(2~4문장) → 가능한 원인(가설) → 실행 제안(구체적 행동 지시)\n"
                     + "\n"
@@ -460,7 +476,7 @@ public class TrainingServiceImpl implements TrainingService {
                     + "* 언어검증: 한국어만 사용\n"
                     + "\n"
                     + "## 컨텍스트 관리자\n"
-                    + "* 필수입력: 음정·박자·발음 점수 + 발성태그TOP3(확률%)\n"
+                    + "* 필수입력: 음정·박자·발음 점수 + 발성태그TOP3(확률%) + 발성 특성 3개 비율(%)\n"
                     + "* 예외처리: 결측값은 해당 항목 언급 생략\n"
                     + "* 분석기준: 최저점수 항목을 중심으로 원인과 해결책 도출\n"
                     + "* 출력규칙: 반드시 JSON만 반환, 코드블록·주석·줄바꿈·백틱·설명문·마크다운 금지, 한국어 고정\n"
@@ -474,6 +490,9 @@ public class TrainingServiceImpl implements TrainingService {
                     typeList.get(0) + " " + ratioList.get(0) + "\n" +
                     typeList.get(1) + " " + ratioList.get(1) + "\n" +
                     typeList.get(2) + " " + ratioList.get(2) + "\n"
+                    + "벤딩: " + String.format("%.2f", bendingPct) + "\n"
+                    + "바이브레이션: " + String.format("%.2f", vibrtPct) + "\n"
+                    + "호흡: " + String.format("%.2f", breathPct) + "\n"
                     ;
 
             String gptResponse = MeasureTime.run("askToGpt", () -> chatGPTService.askToGpt(userPrompt));
@@ -551,6 +570,7 @@ public class TrainingServiceImpl implements TrainingService {
 
             CompletableFuture<String> transcriptFuture = transcriptionService.transcribeAndGetText(jobName, recordingAudioS3Url);
             CompletableFuture<AiVoiceAnalysisResponse> aiFuture = aiService.analyzeWithAiServer(recordingAudioS3Url);
+            CompletableFuture<AiBvbPercentResponse> bvbFuture = aiService.analyzeBvbPercentAsync(recordingAudioS3Url);
 
             String transcriptText = MeasureTime.run("transcriptFuture.get",
                     () -> {
@@ -574,6 +594,16 @@ public class TrainingServiceImpl implements TrainingService {
                             );
                         }
                     });
+            AiBvbPercentResponse bvbResult = MeasureTime.run("bvbFuture.get",
+                    () -> {
+                        try {
+                            return bvbFuture.get(60, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL_AIHUB.getStatus(),
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL_AIHUB.getMessage());
+                        }
+                    });
 
             List<String> typeList = new ArrayList<>();
             List<String> ratioList = new ArrayList<>();
@@ -585,6 +615,10 @@ public class TrainingServiceImpl implements TrainingService {
                 typeList.add(type);
                 ratioList.add(String.format("%.3f", ratio));
             }
+
+            double bendingPct = Optional.ofNullable(bvbResult).map(AiBvbPercentResponse::getData).map(AiBvbPercentResponse.Data::getBending).orElse(0.0);
+            double vibrtPct   = Optional.ofNullable(bvbResult).map(AiBvbPercentResponse::getData).map(AiBvbPercentResponse.Data::getVibrt).orElse(0.0);
+            double breathPct  = Optional.ofNullable(bvbResult).map(AiBvbPercentResponse::getData).map(AiBvbPercentResponse.Data::getBreath).orElse(0.0);
 
             String lyricText = "";
             if (trainingMode.equals(TrainingMode.SOLO)) {
@@ -622,7 +656,7 @@ public class TrainingServiceImpl implements TrainingService {
                     + "* 역량: 점수·태그 기반 진단, 즉시 실행 가능한 과제 제안\n"
                     + "\n"
                     + "## 레시피/절차 생성\n"
-                    + "* 입력해석: 3개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
+                    + "* 입력해석: 3개 항목별 점수(0~100) + 발성태그 상위3개(확률%) + 발성 특성 3개 비율(%) → 강점·보완 도출\n"
                     + "* 우선순위: 60점 미만 항목 → 60~80점 항목 → 80점 이상 항목 순\n"
                     + "* 작성순서: 제목(한줄) → 상태요약(2~4문장) → 가능한 원인(가설) → 실행 제안(구체적 행동 지시)\n"
                     + "\n"
@@ -658,7 +692,7 @@ public class TrainingServiceImpl implements TrainingService {
                     + "* 언어검증: 한국어만 사용\n"
                     + "\n"
                     + "## 컨텍스트 관리자\n"
-                    + "* 필수입력: 음정·박자·발음 점수 + 발성태그TOP3(확률%)\n"
+                    + "* 필수입력: 음정·박자·발음 점수 + 발성태그TOP3(확률%) + 발성 특성 3개 비율(%)\n"
                     + "* 예외처리: 결측값은 해당 항목 언급 생략\n"
                     + "* 분석기준: 최저점수 항목을 중심으로 원인과 해결책 도출\n"
                     + "* 출력규칙: 반드시 JSON만 반환, 코드블록·주석·줄바꿈·백틱·설명문·마크다운 금지, 한국어 고정\n"
@@ -672,6 +706,9 @@ public class TrainingServiceImpl implements TrainingService {
                     typeList.get(0) + " " + ratioList.get(0) + "\n" +
                     typeList.get(1) + " " + ratioList.get(1) + "\n" +
                     typeList.get(2) + " " + ratioList.get(2) + "\n"
+                    + "벤딩: " + String.format("%.2f", bendingPct) + "\n"
+                    + "바이브레이션: " + String.format("%.2f", vibrtPct) + "\n"
+                    + "호흡: " + String.format("%.2f", breathPct) + "\n"
                     ;
 
             String gptResponse = MeasureTime.run("askToGpt", () -> chatGPTService.askToGpt(userPrompt));
@@ -782,6 +819,7 @@ public class TrainingServiceImpl implements TrainingService {
 
             CompletableFuture<String> transcriptFuture = transcriptionService.transcribeAndGetText(jobName, recordingAudioS3Url);
             CompletableFuture<AiVoiceAnalysisResponse> aiFuture = aiService.analyzeWithAiServer(recordingAudioS3Url);
+            CompletableFuture<AiBvbPercentResponse> bvbFuture = aiService.analyzeBvbPercentAsync(recordingAudioS3Url);
 
             String transcriptText = MeasureTime.run("transcriptFuture.get",
                     () -> {
@@ -805,6 +843,16 @@ public class TrainingServiceImpl implements TrainingService {
                             );
                         }
                     });
+            AiBvbPercentResponse bvbResult = MeasureTime.run("bvbFuture.get",
+                    () -> {
+                        try {
+                            return bvbFuture.get(60, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL_AIHUB.getStatus(),
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL_AIHUB.getMessage());
+                        }
+                    });
 
             List<String> typeList = new ArrayList<>();
             List<String> ratioList = new ArrayList<>();
@@ -816,6 +864,10 @@ public class TrainingServiceImpl implements TrainingService {
                 typeList.add(type);
                 ratioList.add(String.format("%.3f", ratio));
             }
+
+            double bendingPct = Optional.ofNullable(bvbResult).map(AiBvbPercentResponse::getData).map(AiBvbPercentResponse.Data::getBending).orElse(0.0);
+            double vibrtPct   = Optional.ofNullable(bvbResult).map(AiBvbPercentResponse::getData).map(AiBvbPercentResponse.Data::getVibrt).orElse(0.0);
+            double breathPct  = Optional.ofNullable(bvbResult).map(AiBvbPercentResponse::getData).map(AiBvbPercentResponse.Data::getBreath).orElse(0.0);
 
             String lyricText = "";
             if (trainingMode.equals(TrainingMode.SOLO)) {
@@ -853,7 +905,7 @@ public class TrainingServiceImpl implements TrainingService {
                     + "* 역량: 점수·태그 기반 진단, 즉시 실행 가능한 과제 제안\n"
                     + "\n"
                     + "## 레시피/절차 생성\n"
-                    + "* 입력해석: 3개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
+                    + "* 입력해석: 3개 항목별 점수(0~100) + 발성태그 상위3개(확률%) + 발성 특성 3개 비율(%) → 강점·보완 도출\n"
                     + "* 우선순위: 60점 미만 항목 → 60~80점 항목 → 80점 이상 항목 순\n"
                     + "* 작성순서: 훈련 후 보컬에 대한 총평 제목(한 줄) → 상태요약(1~3문장) → 훈련 전후 차이에 대한 피드백 제목(한 줄) → 피드백 내용(구체적 행동 지시)\n"
                     + "\n"
@@ -889,7 +941,7 @@ public class TrainingServiceImpl implements TrainingService {
                     + "* 언어검증: 한국어만 사용\n"
                     + "\n"
                     + "## 컨텍스트 관리자\n"
-                    + "* 필수입력: 음정·박자·발음 점수 + 발성태그TOP3(확률%)\n"
+                    + "* 필수입력: 음정·박자·발음 점수 + 발성태그TOP3(확률%) + 발성 특성 3개 비율(%)\n"
                     + "* 예외처리: 결측값은 해당 항목 언급 생략\n"
                     + "* 분석기준: 최저점수 항목을 중심으로 원인과 해결책 도출\n"
                     + "* 출력규칙: 반드시 JSON만 반환, 코드블록·주석·줄바꿈·백틱·설명문·마크다운 금지, 한국어 고정\n"
@@ -906,6 +958,9 @@ public class TrainingServiceImpl implements TrainingService {
                     typeList.get(0) + " " + ratioList.get(0) + "\n" +
                     typeList.get(1) + " " + ratioList.get(1) + "\n" +
                     typeList.get(2) + " " + ratioList.get(2) + "\n"
+                    + "벤딩: " + String.format("%.2f", bendingPct) + "\n"
+                    + "바이브레이션: " + String.format("%.2f", vibrtPct) + "\n"
+                    + "호흡: " + String.format("%.2f", breathPct) + "\n"
                     ;
 
             String gptResponse = MeasureTime.run("askToGpt", () -> chatGPTService.askToGpt(userPrompt));
@@ -1007,6 +1062,7 @@ public class TrainingServiceImpl implements TrainingService {
 
             CompletableFuture<String> transcriptFuture = transcriptionService.transcribeAndGetText(jobName, recordingAudioS3Url);
             CompletableFuture<AiVoiceAnalysisResponse> aiFuture = aiService.analyzeWithAiServer(recordingAudioS3Url);
+            CompletableFuture<AiBvbPercentResponse> bvbFuture = aiService.analyzeBvbPercentAsync(recordingAudioS3Url);
 
             String transcriptText = MeasureTime.run("transcriptFuture.get",
                     () -> {
@@ -1030,6 +1086,16 @@ public class TrainingServiceImpl implements TrainingService {
                             );
                         }
                     });
+            AiBvbPercentResponse bvbResult = MeasureTime.run("bvbFuture.get",
+                    () -> {
+                        try {
+                            return bvbFuture.get(60, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new ResponseStatusException(
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL_AIHUB.getStatus(),
+                                    ResponseCode.AI_VOICE_ANALYSIS_FAIL_AIHUB.getMessage());
+                        }
+                    });
 
             List<String> typeList = new ArrayList<>();
             List<String> ratioList = new ArrayList<>();
@@ -1041,6 +1107,10 @@ public class TrainingServiceImpl implements TrainingService {
                 typeList.add(type);
                 ratioList.add(String.format("%.3f", ratio));
             }
+
+            double bendingPct = Optional.ofNullable(bvbResult).map(AiBvbPercentResponse::getData).map(AiBvbPercentResponse.Data::getBending).orElse(0.0);
+            double vibrtPct   = Optional.ofNullable(bvbResult).map(AiBvbPercentResponse::getData).map(AiBvbPercentResponse.Data::getVibrt).orElse(0.0);
+            double breathPct  = Optional.ofNullable(bvbResult).map(AiBvbPercentResponse::getData).map(AiBvbPercentResponse.Data::getBreath).orElse(0.0);
 
             // 전체 가사 조회
             List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(trainingSong);
@@ -1058,7 +1128,7 @@ public class TrainingServiceImpl implements TrainingService {
                             + "* 역량: 점수·태그 기반 진단, 즉시 실행 가능한 과제 제안\n"
                             + "\n"
                             + "## 레시피/절차 생성\n"
-                            + "* 입력해석: 3개 항목별 점수(0~100) + 발성태그 상위3개(확률%) → 강점·보완 도출\n"
+                            + "* 입력해석: 3개 항목별 점수(0~100) + 발성태그 상위3개(확률%) + 발성 특성 3개 비율(%) → 강점·보완 도출\n"
                             + "* 우선순위: 60점 미만 항목 → 60~80점 항목 → 80점 이상 항목 순\n"
                             + "* 작성순서: 제목(한줄) → 상태요약(2~4문장) → 듀엣 궁합 피드백 → 파트너와의 조화를 위주로 피드백\n"
                             + "\n"
@@ -1094,7 +1164,7 @@ public class TrainingServiceImpl implements TrainingService {
                             + "* 언어검증: 한국어만 사용\n"
                             + "\n"
                             + "## 컨텍스트 관리자\n"
-                            + "* 필수입력: 음정·박자·발음 점수 + 발성태그TOP3(확률%)\n"
+                            + "* 필수입력: 음정·박자·발음 점수 + 발성태그TOP3(확률%) + 발성 특성 3개 비율(%)\n"
                             + "* 예외처리: 결측값은 해당 항목 언급 생략\n"
                             + "* 분석기준: 최저점수 항목을 중심으로 원인과 해결책 도출\n"
                             + "* 출력규칙: 반드시 JSON만 반환, 코드블록·주석·줄바꿈·백틱·설명문·마크다운 금지, 한국어 고정\n"
@@ -1108,6 +1178,9 @@ public class TrainingServiceImpl implements TrainingService {
                             typeList.get(0) + " " + ratioList.get(0) + "\n" +
                             typeList.get(1) + " " + ratioList.get(1) + "\n" +
                             typeList.get(2) + " " + ratioList.get(2) + "\n"
+                            + "벤딩: " + String.format("%.2f", bendingPct) + "\n"
+                            + "바이브레이션: " + String.format("%.2f", vibrtPct) + "\n"
+                            + "호흡: " + String.format("%.2f", breathPct) + "\n"
                     ;
 
             String gptResponse = MeasureTime.run("askToGpt", () -> chatGPTService.askToGpt(userPrompt));
