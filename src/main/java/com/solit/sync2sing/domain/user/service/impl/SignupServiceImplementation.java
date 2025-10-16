@@ -43,11 +43,11 @@ public class SignupServiceImplementation implements UserSignupService {
                 .username(requestDTO.getUsername())
                 .password(encodedPassword)
                 .nickname(requestDTO.getNickname())
-                .gender(Gender.FEMALE)
-                .age(26)
-                .pitchNoteMin("C3")
-                .pitchNoteMax("G5")
-                .voiceType(VoiceType.SOPRANO)
+                .gender(requestDTO.getGender())
+                .age(requestDTO.getAge())
+                .pitchNoteMin(requestDTO.getPitchNoteMin())
+                .pitchNoteMax(requestDTO.getPitchNoteMax())
+                .voiceType(requestDTO.getVoiceType())
                 .duetPenaltyCount(0)
                 .duetPenaltyUntil(null)
                 .roles(List.of("USER"))
@@ -80,7 +80,8 @@ public class SignupServiceImplementation implements UserSignupService {
                 .pitchNoteMin(userEntity.getPitchNoteMin())
                 .pitchNoteMax(userEntity.getPitchNoteMax())
                 .voiceType(userEntity.getVoiceType())
-                .duetPenaltyUntil(null)
+                .duetPenaltyCount(userEntity.getDuetPenaltyCount())
+                .duetPenaltyUntil(userEntity.getDuetPenaltyUntil())
                 .build();
     }
 

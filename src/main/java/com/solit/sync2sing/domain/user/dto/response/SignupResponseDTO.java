@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Getter
 @Builder
 public class SignupResponseDTO {
-    private String username; // 사용자의 이메일
+    private String username;
     private String nickname;
     private Gender gender;
     private int age;
