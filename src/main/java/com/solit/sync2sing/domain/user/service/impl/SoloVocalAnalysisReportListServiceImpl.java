@@ -35,7 +35,10 @@ public class SoloVocalAnalysisReportListServiceImpl implements SoloVocalAnalysis
 
         if (userDetails != null) {
             Long userId = userDetails.getId();
-            List<RecordingContext> soloReportTypes = List.of(RecordingContext.PRE, RecordingContext.POST);
+            List<RecordingContext> soloReportTypes = List.of(
+                    RecordingContext.PRE,
+                    RecordingContext.POST,
+                    RecordingContext.GUEST);
 
             soloReports = vocalAnalysisReportRepository.findAllByUser_IdAndTrainingModeAndReportTypeInOrderByCreatedAtDesc(
                     userId,

@@ -30,7 +30,7 @@ public class VocalAnalysisReportDetailServiceImpl implements VocalAnalysisReport
 
         // 분석 타입에 따라 DTO 변환
         RecordingContext type = report.getReportType();
-        if (type == RecordingContext.PRE) {
+        if (type == RecordingContext.GUEST || type == RecordingContext.PRE) {
             return PreVocalAnalysisReportDetailResponseDTO.toDTO(report);
         } else if (type == RecordingContext.POST) {
             return PostVocalAnalysisReportDetailResponseDTO.toDTO(report);
