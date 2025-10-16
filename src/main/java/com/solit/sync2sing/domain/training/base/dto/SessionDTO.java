@@ -37,6 +37,8 @@ public class SessionDTO {
 
     private DuetTrainingRoomListResponse.DuetTrainingRoomDto duetTrainingRoom;
 
+    private Boolean hasPostVocalAnalysisReport;
+
     @Getter
     @Setter
     @SuperBuilder

@@ -224,6 +224,10 @@ public abstract class AbstractTrainingService {
                     .build();
             DuetTrainingRoomListResponse.DuetTrainingRoomDto duetTrainingRoomDto = DuetTrainingRoomDtoB.song(duetSongDTO).build();
             dtoB.duetTrainingRoom(duetTrainingRoomDto);
+
+            dtoB.hasPostVocalAnalysisReport(
+                    recordingRepository.findByTrainingSessionAndRecordingPhaseAndRecordingFormat(mySession, RecordingContext.POST, RecordingFormat.SINGLE).isPresent()
+            );
         }
 
         return Optional.of(dtoB.build());
