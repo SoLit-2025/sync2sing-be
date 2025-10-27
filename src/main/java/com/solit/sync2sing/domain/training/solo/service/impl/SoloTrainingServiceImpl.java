@@ -17,7 +17,8 @@ class SoloTrainingServiceImpl extends AbstractTrainingService implements SoloTra
             DuetTrainingRoomRepository duetTrainingRoomRepository,
             SongRepository songRepository,
             LyricslineRepository lyricslineRepository,
-            DuetSongPartRepository duetSongPartRepository
+            DuetSongPartRepository duetSongPartRepository,
+            TrainingImageRepository trainingImageRepository
     ) {
         super(
                 TrainingMode.SOLO,
@@ -28,7 +29,8 @@ class SoloTrainingServiceImpl extends AbstractTrainingService implements SoloTra
                 duetTrainingRoomRepository,
                 songRepository,
                 lyricslineRepository,
-                duetSongPartRepository
+                duetSongPartRepository,
+                trainingImageRepository
         );
     }
 

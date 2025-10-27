@@ -41,6 +41,7 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
     private final RecordingRepository recordingRepository;
     private final FfmpegAudioMerger ffmpegAudioMerger;
     private final VocalAnalysisReportRepository vocalAnalysisReportRepository;
+    private final TrainingImageRepository trainingImageRepository;
 
     public DuetTrainingServiceImpl(
             TransactionTemplate transactionTemplate,
@@ -56,7 +57,8 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
             DuetRoomApplicationRepository duetRoomApplicationRepository,
             FfmpegAudioMerger ffmpegAudioMerger,
             TrainingServiceImpl trainingServiceImpl,
-            VocalAnalysisReportRepository vocalAnalysisReportRepository
+            VocalAnalysisReportRepository vocalAnalysisReportRepository,
+            TrainingImageRepository trainingImageRepository
     ) {
         super(
                 TrainingMode.DUET,
@@ -67,7 +69,8 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
                 duetTrainingRoomRepository,
                 songRepository,
                 lyricslineRepository,
-                duetSongPartRepository
+                duetSongPartRepository,
+                trainingImageRepository
         );
 
         this.transactionTemplate = transactionTemplate;
