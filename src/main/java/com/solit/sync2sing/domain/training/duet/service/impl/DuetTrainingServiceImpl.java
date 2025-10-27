@@ -85,6 +85,7 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
         this.ffmpegAudioMerger = ffmpegAudioMerger;
         this.trainingServiceImpl = trainingServiceImpl;
         this.vocalAnalysisReportRepository = vocalAnalysisReportRepository;
+        this.trainingImageRepository = trainingImageRepository;
     }
 
     @Override
