@@ -2,7 +2,14 @@ package com.solit.sync2sing.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import lombok.*;
 
+@Getter
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Entity
+@Table(name = "training_image")
 public class TrainingImage {
 
     @Id
