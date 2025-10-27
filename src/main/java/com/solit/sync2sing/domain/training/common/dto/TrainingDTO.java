@@ -4,6 +4,8 @@ import com.solit.sync2sing.entity.Training;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.util.List;
+
 @Getter
 @SuperBuilder
 @NoArgsConstructor
@@ -15,6 +17,16 @@ public class TrainingDTO {
     private String grade;
     private String description;
     private Integer trainingMinutes;
+    private List<ImageDTO> imageList;
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ImageDTO {
+        private int order;
+        private String url;
+    }
 
     public static TrainingDTO toDTO(Training training) {
         return TrainingDTO.builder()
