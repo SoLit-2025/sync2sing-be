@@ -31,6 +31,7 @@ public abstract class AbstractTrainingService {
     private final SongRepository songRepository;
     private final LyricslineRepository lyricslineRepository;
     private final DuetSongPartRepository duetSongPartRepository;
+    private final TrainingImageRepository trainingImageRepository;
 
     @Transactional
     public Optional<SessionDTO> getSession(Long userId) {
@@ -165,7 +166,14 @@ public abstract class AbstractTrainingService {
         // 각 엔티티를 DTO로 변환해 해당 카테고리에 추가
         for (TrainingSessionTraining tst : trainings) {
             TrainingDTO base = TrainingDTO.toDTO(tst.getTraining());
-            SessionDTO.TrainingSessionTrainingDTO dto =
+
+            List<TrainingImage> imageList =
+                    trainingImageRepository.findByTrainingIdOrderByImageOrder(base.getId());
+            List<TrainingDTO.ImageDTO> imageDtoList = imageList.stream()
+                    .map(ti -> new TrainingDTO.ImageDTO(ti.getImageOrder(), ti.getImageFile().getFileUrl()))
+                    .toList();
+
+                    SessionDTO.TrainingSessionTrainingDTO dto =
                     SessionDTO.TrainingSessionTrainingDTO.builder()
                             .id(base.getId())
                             .category(base.getCategory())
@@ -173,6 +181,7 @@ public abstract class AbstractTrainingService {
                             .grade(base.getGrade())
                             .description(base.getDescription())
                             .trainingMinutes(base.getTrainingMinutes())
+                            .imageList(imageDtoList)
                             .progress(tst.getProgress())
                             .isCurrentTraining(tst.isCurrentTraining())
                             .build();
