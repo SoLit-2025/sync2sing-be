@@ -806,8 +806,8 @@ public class TrainingServiceImpl implements TrainingService {
 
         // 훈련 전 보컬분석리포트
         VocalAnalysisReport preReport = vocalAnalysisReportRepository
-                .findTopBySongAndTrainingModeAndReportTypeOrderByCreatedAtDesc(
-                        trainingSong, trainingMode, RecordingContext.PRE
+                .findTopBySongAndTrainingModeAndReportTypeAndUserIdOrderByCreatedAtDesc(
+                        trainingSong, trainingMode, RecordingContext.PRE, userId
                 )
                 .orElse(null);
 
