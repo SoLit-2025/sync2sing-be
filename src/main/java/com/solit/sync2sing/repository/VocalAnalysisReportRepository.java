@@ -4,9 +4,7 @@ import com.solit.sync2sing.entity.Song;
 import com.solit.sync2sing.entity.VocalAnalysisReport;
 import com.solit.sync2sing.global.type.TrainingMode;
 import com.solit.sync2sing.global.type.RecordingContext;
-import com.solit.sync2sing.global.type.TrainingMode;
 import org.springframework.data.jpa.repository.JpaRepository;
-import com.solit.sync2sing.global.type.RecordingContext;
 
 import java.util.List;
 
@@ -22,9 +20,10 @@ public interface VocalAnalysisReportRepository extends JpaRepository<VocalAnalys
 
 
     // 가장 최신 PRE 리포트 하나
-    Optional<VocalAnalysisReport> findTopBySongAndTrainingModeAndReportTypeOrderByCreatedAtDesc(
+    Optional<VocalAnalysisReport> findTopBySongAndTrainingModeAndReportTypeAndUserIdOrderByCreatedAtDesc(
             Song song,
             TrainingMode trainingMode,
-            RecordingContext reportType
+            RecordingContext reportType,
+            Long userId
     );
 }
