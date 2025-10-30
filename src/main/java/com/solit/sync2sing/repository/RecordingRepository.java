@@ -11,5 +11,5 @@ import java.util.Optional;
 
 public interface RecordingRepository extends JpaRepository<Recording, Long> {
     Optional<Recording> findByTrainingSessionAndRecordingPhaseAndRecordingFormat(TrainingSession trainingSession, RecordingContext recordingPhase, RecordingFormat recordingFormat);
-    List<Recording> findByTrainingSession(TrainingSession hostTrainingSession);
+    List<Recording> findByTrainingSessionAndRecordingFormat(TrainingSession hostTrainingSession, RecordingFormat recordingFormat);
 }
