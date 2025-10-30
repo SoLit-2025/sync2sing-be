@@ -428,7 +428,8 @@ public class TrainingServiceImpl implements TrainingService {
             String lyricText = "";
             List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(guestSong);
             lyricText += lines.stream()
-                    .map(Lyricsline::getText) + " ";
+                    .map(Lyricsline::getText)
+                    .collect(Collectors.joining(" "));
 
             int pronunciationScore = calculateSimilarityScore(transcriptText, lyricText);
 
@@ -625,7 +626,8 @@ public class TrainingServiceImpl implements TrainingService {
                 // 전체 가사 조회
                 List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(trainingSong);
                 lyricText += lines.stream()
-                        .map(Lyricsline::getText) + " ";
+                        .map(Lyricsline::getText)
+                        .collect(Collectors.joining(" "));
             } else if (trainingMode.equals(TrainingMode.DUET)) {
                 // 파트별 가사 조회
                 DuetSongPart duetSongPart;
@@ -643,7 +645,8 @@ public class TrainingServiceImpl implements TrainingService {
 
                 List<Lyricsline> lines = lyricslineRepository.findByDuetSongPart(duetSongPart);
                 lyricText += lines.stream()
-                        .map(Lyricsline::getText) + " ";
+                        .map(Lyricsline::getText)
+                        .collect(Collectors.joining(" "));
             }
 
             int pronunciationScore = calculateSimilarityScore(transcriptText, lyricText);
@@ -874,7 +877,8 @@ public class TrainingServiceImpl implements TrainingService {
                 // 전체 가사 조회
                 List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(trainingSong);
                 lyricText += lines.stream()
-                        .map(Lyricsline::getText) + " ";
+                        .map(Lyricsline::getText)
+                        .collect(Collectors.joining(" "));
             } else if (trainingMode.equals(TrainingMode.DUET)) {
                 // 파트별 가사 조회
                 DuetSongPart duetSongPart;
@@ -892,7 +896,8 @@ public class TrainingServiceImpl implements TrainingService {
 
                 List<Lyricsline> lines = lyricslineRepository.findByDuetSongPart(duetSongPart);
                 lyricText += lines.stream()
-                        .map(Lyricsline::getText) + " ";
+                        .map(Lyricsline::getText)
+                        .collect(Collectors.joining(" "));
             }
 
             int pronunciationScore = calculateSimilarityScore(transcriptText, lyricText);
@@ -1116,7 +1121,8 @@ public class TrainingServiceImpl implements TrainingService {
             List<Lyricsline> lines = lyricslineRepository.findBySongOrderByLineIndex(trainingSong);
             String lyricText = "";
             lyricText += lines.stream()
-                    .map(Lyricsline::getText) + " ";
+                    .map(Lyricsline::getText)
+                    .collect(Collectors.joining(" "));
 
             int pronunciationScore = calculateSimilarityScore(transcriptText, lyricText);
 
@@ -1243,6 +1249,12 @@ public class TrainingServiceImpl implements TrainingService {
         LevenshteinDistance ld = new LevenshteinDistance();
         int distance = ld.apply(sttText, reference);
         int maxLen = Math.max(sttText.length(), reference.length());
+
+        log.info("sttText: {}", sttText);
+        log.info("reference: {}", reference);
+        log.info("distance: {}", distance);
+        log.info("maxLen: {}", maxLen);
+        log.info("score: {}", (int) ((1.0 - ((double) distance / maxLen)) * 100));
 
         // 100점 만점 스케일로 변환
         return (int) ((1.0 - ((double) distance / maxLen)) * 100);
