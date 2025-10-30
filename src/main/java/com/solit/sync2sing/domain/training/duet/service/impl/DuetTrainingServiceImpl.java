@@ -320,7 +320,7 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
         duetTrainingRoomRepository.flush();
 
         if (room.getHostTrainingSession() != null) {
-            recordingRepository.findByTrainingSession(room.getHostTrainingSession())
+            recordingRepository.findByTrainingSessionAndRecordingFormat(room.getHostTrainingSession(), RecordingFormat.SINGLE)
                     .stream()
                     .map(Recording::getAudioFile)
                     .map(AudioFile::getFileUrl)
@@ -329,7 +329,7 @@ public class DuetTrainingServiceImpl extends AbstractTrainingService implements 
             trainingSessionRepository.delete(room.getHostTrainingSession());
         }
         if (room.getPartnerTrainingSession() != null) {
-            recordingRepository.findByTrainingSession(room.getPartnerTrainingSession())
+            recordingRepository.findByTrainingSessionAndRecordingFormat(room.getPartnerTrainingSession(), RecordingFormat.SINGLE)
                     .stream()
                     .map(Recording::getAudioFile)
                     .map(AudioFile::getFileUrl)
